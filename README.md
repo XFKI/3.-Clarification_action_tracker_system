@@ -77,6 +77,12 @@ npx vercel login
 npx vercel --prod --yes
 ```
 
+或使用仓库一键脚本（Linux / macOS / Git Bash）：
+
+```bash
+sh quick-deploy-vercel.sh
+```
+
 > ⚠️ 网页模式使用浏览器 localStorage / IndexedDB 存储数据，适合演示与受限环境，不建议作为唯一生产数据源。本地后端模式不受影响，两种模式互不干扰。
 
 ## ⌨️ 常用快捷键

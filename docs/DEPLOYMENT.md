@@ -19,6 +19,10 @@ Keep the existing local backend startup path unchanged, while adding an online d
 
 `npx vercel --prod --yes`
 
+1. Or one-click script (Linux / macOS / Git Bash):
+
+`sh quick-deploy-vercel.sh`
+
 1. Open with web mode query:
 
 `https://<domain>.vercel.app/?mode=web`

@@ -126,6 +126,10 @@ pie title 核心模块占比
 1. 首次登录：npx vercel login
 2. 生产部署：npx vercel --prod --yes
 
+也可直接使用仓库一键脚本（Linux / macOS / Git Bash）：
+
+- sh quick-deploy-vercel.sh
+
 若出现 token 无效：
 
 - 原因：本机 Vercel token 失效或未登录。

@@ -77,6 +77,12 @@ npx vercel login
 npx vercel --prod --yes
 ```
 
+Or use the repo one-click script (Linux / macOS / Git Bash):
+
+```bash
+sh quick-deploy-vercel.sh
+```
+
 > ⚠️ Web mode uses browser localStorage / IndexedDB. Suitable for demos and restricted environments; not recommended as the sole production data source. Local backend mode is unaffected — both modes operate independently.
 
 ## ⌨️ Keyboard Shortcuts
