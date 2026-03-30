@@ -1186,7 +1186,6 @@ async function writeWorkbookToHandle(handle,wb){
 async function runAutoBackup(reason,allowDownloadFallback){
   if(!autoBackupCfg.enabled)return;
   const fp=autoBackupFingerprint();
-  if(fp===autoBackupLastFingerprint&&reason!=='manual')return;
   const wb=buildMainWorkbook();
   if(autoBackupCfg.mode==='file'){
     if(!autoBackupFileHandle)autoBackupFileHandle=await loadAutoBackupHandle();
@@ -1209,7 +1208,7 @@ async function runAutoBackup(reason,allowDownloadFallback){
     autoBackupCfg.lastBackupAt=nowIso();
     autoBackupLastFingerprint=fp;
     saveAutoBackupCfg();
-    if(reason==='manual')toast(t('已执行备份下载','Backup downloaded'));
+    if(reason==='manual'||reason==='interval')toast(t('备份已保存','Backup saved'));
   }
 }
 async function bindAutoBackupFile(){
@@ -1217,7 +1216,7 @@ async function bindAutoBackupFile(){
     autoBackupCfg.enabled=true;
     autoBackupCfg.mode='download';
     saveAutoBackupCfg();
-    toast(t('浏览器不支持文件直写，已切换下载备份模式','File write not supported, switched to download mode'),'error');
+    toast(t('浏览器不支持选择本地文件，已切换下载备份模式','File picker is not supported, switched to download mode'),'error');
     return;
   }
   const handle=await window.showSaveFilePicker({
@@ -1232,10 +1231,36 @@ async function bindAutoBackupFile(){
   autoBackupCfg.mode='file';
   saveAutoBackupCfg();
   await runAutoBackup('manual',true);
-  toast(t('已绑定自动备份文件，退出时自动覆盖写入','Auto backup file bound for exit updates'),'info');
+  toast(t('已绑定自动备份文件，后续定时任务将自动覆盖写入','Backup file bound, scheduled tasks will overwrite it'),'info');
+}
+async function ensureBackupDestinationBeforeEnable(){
+  if(autoBackupCfg.mode==='file'){
+    if(!autoBackupFileHandle)autoBackupFileHandle=await loadAutoBackupHandle();
+    if(autoBackupFileHandle)return true;
+    await bindAutoBackupFile();
+    if(autoBackupCfg.mode==='file'&&!autoBackupFileHandle){
+      toast(t('未完成备份地址选择，定时备份未开启','Backup destination not selected, schedule not enabled'),'error');
+      return false;
+    }
+    return true;
+  }
+  if(typeof window.showSaveFilePicker==='function'){
+    const choose=confirm(t('建议先选择备份文件地址，确保每次定时任务都可直接覆盖保存。\n点击“确定”现在选择；点击“取消”保持下载模式。','Recommended: choose a backup file now so each schedule can overwrite directly.\nClick OK to choose now, Cancel to keep download mode.'));
+    if(choose){
+      await bindAutoBackupFile();
+      if(autoBackupCfg.mode==='file'&&!autoBackupFileHandle){
+        toast(t('未完成备份地址选择，定时备份未开启','Backup destination not selected, schedule not enabled'),'error');
+        return false;
+      }
+    }
+  }
+  return true;
 }
 async function openAutoBackupDialog(){
   const modal=document.getElementById('modal');
+  const destinationText=autoBackupCfg.mode==='file'
+    ? (autoBackupFileHandle?t('已绑定本地文件','Local file bound'):t('未绑定本地文件','Local file not bound'))
+    : t('下载模式（每次生成新文件）','Download mode (new file each time)');
   const intervalBtns=AUTO_BACKUP_INTERVAL_OPTIONS.map(opt=>{
     const active=autoBackupCfg.enabled&&autoBackupCfg.intervalMs===opt.ms;
     return `<button class="btn ${active?'btn-primary':'btn-outline'}" style="min-width:110px;justify-content:center" onclick="setAutoBackupInterval(${opt.ms})">${t(opt.labelZh,opt.labelEn)}</button>`;
@@ -1243,14 +1268,17 @@ async function openAutoBackupDialog(){
   const enabledText=autoBackupCfg.enabled?t('已开启','Enabled'):t('已关闭','Disabled');
   const modeText=autoBackupCfg.mode==='file'?t('本地文件覆盖写入','Local file overwrite'):t('下载备份','Download backup');
   const lastText=autoBackupCfg.lastBackupAt?fmtDate(autoBackupCfg.lastBackupAt):t('暂无','N/A');
-  modal.innerHTML=`<div class="modal-content" style="max-width:760px"><div class="modal-header"><h2>${t('定时备份设置','Scheduled Backup')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="storage-note">${t('请选择定时备份间隔。系统将按间隔自动备份；“立即备份”可随时手动保存一次。','Choose backup interval. System will backup on schedule; use Backup Now anytime.')}</div><div class="storage-grid" style="grid-template-columns:repeat(3,minmax(120px,1fr))"><div class="storage-stat"><div class="storage-k">${t('状态','Status')}</div><div class="storage-v">${enabledText}</div></div><div class="storage-stat"><div class="storage-k">${t('当前间隔','Interval')}</div><div class="storage-v">${getAutoBackupIntervalLabel()}</div></div><div class="storage-stat"><div class="storage-k">${t('备份方式','Mode')}</div><div class="storage-v" style="font-size:.82rem">${modeText}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${intervalBtns}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-outline" onclick="disableAutoBackup()">${t('关闭定时备份','Disable Schedule')}</button><button class="btn btn-outline" onclick="switchAutoBackupToDownload()">${t('切换为下载备份','Use Download Mode')}</button><button class="btn btn-outline" onclick="bindAutoBackupFileFromDialog()">${t('绑定本地备份文件','Bind Local File')}</button></div><div class="storage-note" style="margin-top:10px">${t('最近备份日期','Last Backup Date')}: ${lastText}</div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
+  modal.innerHTML=`<div class="modal-content" style="max-width:760px"><div class="modal-header"><h2>${t('定时备份设置','Scheduled Backup')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="storage-note">${t('建议流程：先绑定备份地址，再选择定时间隔。开启后会先执行一次备份确认成功。','Recommended flow: bind backup destination first, then choose interval. Enabling schedule performs one immediate backup as confirmation.')}</div><div class="storage-grid" style="grid-template-columns:repeat(4,minmax(120px,1fr))"><div class="storage-stat"><div class="storage-k">${t('状态','Status')}</div><div class="storage-v">${enabledText}</div></div><div class="storage-stat"><div class="storage-k">${t('当前间隔','Interval')}</div><div class="storage-v">${getAutoBackupIntervalLabel()}</div></div><div class="storage-stat"><div class="storage-k">${t('备份方式','Mode')}</div><div class="storage-v" style="font-size:.82rem">${modeText}</div></div><div class="storage-stat"><div class="storage-k">${t('备份地址','Destination')}</div><div class="storage-v" style="font-size:.76rem">${destinationText}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${intervalBtns}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-outline" onclick="disableAutoBackup()">${t('关闭定时备份','Disable Schedule')}</button><button class="btn btn-outline" onclick="switchAutoBackupToDownload()">${t('切换为下载备份','Use Download Mode')}</button><button class="btn btn-outline" onclick="bindAutoBackupFileFromDialog()">${t('绑定本地备份文件','Bind Local File')}</button></div><div class="storage-note" style="margin-top:10px">${t('最近备份日期','Last Backup Date')}: ${lastText}</div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
   modal.classList.add('open');
 }
-function setAutoBackupInterval(ms){
+async function setAutoBackupInterval(ms){
+  const ok=await ensureBackupDestinationBeforeEnable();
+  if(!ok)return;
   autoBackupCfg.enabled=true;
   autoBackupCfg.intervalMs=Number(ms)||10*60*1000;
   saveAutoBackupCfg();
   startAutoBackupTimer();
+  await runAutoBackup('manual',true);
   toast(t(`已开启定时备份，间隔 ${getAutoBackupIntervalLabel()}`,`Scheduled backup enabled: ${getAutoBackupIntervalLabel()}`),'info');
   openAutoBackupDialog();
 }
