@@ -34,6 +34,30 @@
 | PDF 意见 | PDF 批注提取、筛选、导出 |
 | 审计追踪 | 变更历史 + 回收站恢复 |
 
+## 技术栈
+
+### 技术图标速览
+
+- 🌐 前端：HTML5 + CSS3 + Vanilla JavaScript (ES6)
+- 📈 可视化：Chart.js
+- 📄 Excel 引擎：SheetJS (xlsx)
+- 🐍 本地服务：Python 3 + http.server
+- 🗄️ 数据存储：SQLite
+- 🧾 PDF 提取：PyMuPDF
+- 🚀 在线部署：Vercel + GitHub Pages
+
+### 技术分层
+
+| 层级 | 技术 | 作用 |
+| --- | --- | --- |
+| UI | Vanilla JS, HTML5, CSS3 | 轻量 SPA 交互 |
+| 图表 | Chart.js | KPI 与趋势可视化 |
+| 数据交换 | SheetJS | Excel 导入导出 |
+| 本地服务 | Python http.server | 本地后端接口 |
+| 持久化 | SQLite | 单文件可靠存储 |
+| PDF 提取 | PyMuPDF | PDF 批注解析 |
+| 在线交付 | Vercel, GitHub Pages | 在线演示部署 |
+
 ## 系统架构
 
 ```mermaid

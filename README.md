@@ -34,6 +34,30 @@ It converts clarification and meeting records into actionable tasks, risk visibi
 | PDF Comments | Extract, review, and export PDF annotations |
 | Auditability | Change history + recycle/restore |
 
+## Tech Stack
+
+### Stack Icons
+
+- 🌐 Frontend: HTML5 + CSS3 + Vanilla JavaScript (ES6)
+- 📈 Visualization: Chart.js
+- 📄 Excel Engine: SheetJS (xlsx)
+- 🐍 Local API: Python 3 + http.server
+- 🗄️ Storage: SQLite
+- 🧾 PDF Mining: PyMuPDF
+- 🚀 Hosting: Vercel + GitHub Pages
+
+### Stack Map
+
+| Layer | Technology | Role |
+| --- | --- | --- |
+| UI | Vanilla JS, HTML5, CSS3 | Lightweight SPA interaction |
+| Charts | Chart.js | KPI and trend visualization |
+| Data Exchange | SheetJS | Excel import and export |
+| Local Service | Python http.server | Local backend endpoints |
+| Persistence | SQLite | Reliable single-file storage |
+| PDF Extraction | PyMuPDF | PDF comment parsing |
+| Web Delivery | Vercel, GitHub Pages | Online demo deployment |
+
 ## Architecture
 
 ```mermaid
