@@ -1,0 +1,14 @@
+# Deploy frontend only
+backend/
+data/
+.venv/
+*.xlsx
+*.xls
+*.pdf
+tmp_comments.xlsx
+深井泵VD/
+quick-start.bat
+quick-start.sh
+quick-stop.bat
+quick-stop.sh
+quick-download.sh

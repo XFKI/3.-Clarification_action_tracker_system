@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLNG/FPSO 工程追踪系统 | Engineering Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@500;600;700&family=Oswald:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css?v=20260330b">
+</head>
+<body>
+<aside id="sidebar"></aside>
+<button id="sidebarFloatToggle" onclick="toggleSidebar()" title="展开目录">▶</button>
+<div id="main">
+  <header id="mainHeader"></header>
+  <nav id="mainNav"></nav>
+  <section id="dashboardView" class="view active"></section>
+  <section id="actionView" class="view"></section>
+  <section id="clarificationView" class="view"></section>
+  <section id="meetingView" class="view"></section>
+  <section id="pdfcommentsView" class="view"></section>
+  <section id="recycleView" class="view"></section>
+  <div id="modal" class="modal-overlay"></div>
+  <div id="toastContainer"></div>
+</div>
+<input type="file" id="xlsxFileInput" class="hidden-file-input" accept=".xlsx,.xls,.csv" title="Excel file input">
+<input type="file" id="attachmentInput" class="hidden-file-input" title="Attachment file input">
+<input type="file" id="pdfCommentInput" class="hidden-file-input" accept="application/pdf,.pdf" multiple title="PDF comments input">
+<script src="assets/js/app.core.js?v=20260330b"></script>
+<script src="assets/js/app.features.js?v=20260330b"></script>
+</body>
+</html>
