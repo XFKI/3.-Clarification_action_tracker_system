@@ -1081,22 +1081,40 @@ const AUTO_BACKUP_CFG_KEY='et_auto_backup_cfg_v1';
 const AUTO_BACKUP_DB_NAME='et_auto_backup_db';
 const AUTO_BACKUP_STORE='handles';
 const AUTO_BACKUP_HANDLE_KEY='main_excel_file';
+const AUTO_BACKUP_INTERVAL_OPTIONS=[
+  {labelZh:'5分钟',labelEn:'5 minutes',ms:5*60*1000},
+  {labelZh:'10分钟',labelEn:'10 minutes',ms:10*60*1000},
+  {labelZh:'30分钟',labelEn:'30 minutes',ms:30*60*1000},
+  {labelZh:'2小时',labelEn:'2 hours',ms:2*60*60*1000}
+];
 let autoBackupCfg=loadAutoBackupCfg();
 let autoBackupDbPromise=null;
 let autoBackupFileHandle=null;
 let autoBackupLastFingerprint='';
-let autoBackupExitTriggered=false;
+let autoBackupTimer=null;
 
 function loadAutoBackupCfg(){
   try{
     const raw=JSON.parse(localStorage.getItem(AUTO_BACKUP_CFG_KEY)||'null');
-    if(!raw||typeof raw!=='object')return{enabled:false,mode:'download',lastBackupAt:''};
-    return{enabled:!!raw.enabled,mode:raw.mode==='file'?'file':'download',lastBackupAt:String(raw.lastBackupAt||'')};
+    if(!raw||typeof raw!=='object')return{enabled:false,mode:'download',intervalMs:10*60*1000,lastBackupAt:''};
+    const allowed=AUTO_BACKUP_INTERVAL_OPTIONS.map(i=>i.ms);
+    const intervalMs=allowed.includes(Number(raw.intervalMs))?Number(raw.intervalMs):10*60*1000;
+    return{enabled:!!raw.enabled,mode:raw.mode==='file'?'file':'download',intervalMs,lastBackupAt:String(raw.lastBackupAt||'')};
   }catch(e){
-    return{enabled:false,mode:'download',lastBackupAt:''};
+    return{enabled:false,mode:'download',intervalMs:10*60*1000,lastBackupAt:''};
   }
 }
 function saveAutoBackupCfg(){localStorage.setItem(AUTO_BACKUP_CFG_KEY,JSON.stringify(autoBackupCfg));}
+function getAutoBackupIntervalLabel(){
+  const m=AUTO_BACKUP_INTERVAL_OPTIONS.find(x=>x.ms===autoBackupCfg.intervalMs);
+  if(!m)return t('10分钟','10 minutes');
+  return t(m.labelZh,m.labelEn);
+}
+function startAutoBackupTimer(){
+  if(autoBackupTimer){clearInterval(autoBackupTimer);autoBackupTimer=null;}
+  if(!autoBackupCfg.enabled)return;
+  autoBackupTimer=setInterval(()=>{runAutoBackup('interval',false).catch(()=>{})},autoBackupCfg.intervalMs);
+}
 function formatBackupStamp(){
   const d=new Date();
   const p=n=>String(n).padStart(2,'0');
@@ -1217,25 +1235,41 @@ async function bindAutoBackupFile(){
   toast(t('已绑定自动备份文件，退出时自动覆盖写入','Auto backup file bound for exit updates'),'info');
 }
 async function openAutoBackupDialog(){
-  const status=t('当前状态','Current')+`: ${autoBackupCfg.enabled?(autoBackupCfg.mode==='file'?t('已开启（写入本地文件）','Enabled (write to local file)'):t('已开启（下载备份）','Enabled (download)')):t('已关闭','Disabled')}`;
-  const help=t('输入 1: 绑定本地文件并开启自动备份\n输入 2: 开启下载备份模式\n输入 3: 关闭自动备份\n输入 4: 立即备份一次','Input 1: bind local file + enable auto backup\nInput 2: enable download backup mode\nInput 3: disable auto backup\nInput 4: backup now once');
-  const choice=(prompt(`${status}\n\n${help}`,'1')||'').trim();
-  if(!choice)return;
-  if(choice==='1'){try{await bindAutoBackupFile();}catch(e){toast(t('绑定自动备份文件失败','Bind backup file failed'),'error')}return;}
-  if(choice==='2'){
-    autoBackupCfg.enabled=true;
-    autoBackupCfg.mode='download';
-    saveAutoBackupCfg();
-    toast(t('已开启下载备份模式（退出时自动下载）','Download backup mode enabled'),'info');
-    return;
-  }
-  if(choice==='3'){
-    autoBackupCfg.enabled=false;
-    saveAutoBackupCfg();
-    toast(t('已关闭自动备份','Auto backup disabled'),'info');
-    return;
-  }
-  if(choice==='4')await runAutoBackup('manual',true);
+  const modal=document.getElementById('modal');
+  const intervalBtns=AUTO_BACKUP_INTERVAL_OPTIONS.map(opt=>{
+    const active=autoBackupCfg.enabled&&autoBackupCfg.intervalMs===opt.ms;
+    return `<button class="btn ${active?'btn-primary':'btn-outline'}" style="min-width:110px;justify-content:center" onclick="setAutoBackupInterval(${opt.ms})">${t(opt.labelZh,opt.labelEn)}</button>`;
+  }).join('');
+  const enabledText=autoBackupCfg.enabled?t('已开启','Enabled'):t('已关闭','Disabled');
+  const modeText=autoBackupCfg.mode==='file'?t('本地文件覆盖写入','Local file overwrite'):t('下载备份','Download backup');
+  const lastText=autoBackupCfg.lastBackupAt?fmtDate(autoBackupCfg.lastBackupAt):t('暂无','N/A');
+  modal.innerHTML=`<div class="modal-content" style="max-width:760px"><div class="modal-header"><h2>${t('定时备份设置','Scheduled Backup')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="storage-note">${t('请选择定时备份间隔。系统将按间隔自动备份；“立即备份”可随时手动保存一次。','Choose backup interval. System will backup on schedule; use Backup Now anytime.')}</div><div class="storage-grid" style="grid-template-columns:repeat(3,minmax(120px,1fr))"><div class="storage-stat"><div class="storage-k">${t('状态','Status')}</div><div class="storage-v">${enabledText}</div></div><div class="storage-stat"><div class="storage-k">${t('当前间隔','Interval')}</div><div class="storage-v">${getAutoBackupIntervalLabel()}</div></div><div class="storage-stat"><div class="storage-k">${t('备份方式','Mode')}</div><div class="storage-v" style="font-size:.82rem">${modeText}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${intervalBtns}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-outline" onclick="disableAutoBackup()">${t('关闭定时备份','Disable Schedule')}</button><button class="btn btn-outline" onclick="switchAutoBackupToDownload()">${t('切换为下载备份','Use Download Mode')}</button><button class="btn btn-outline" onclick="bindAutoBackupFileFromDialog()">${t('绑定本地备份文件','Bind Local File')}</button></div><div class="storage-note" style="margin-top:10px">${t('最近备份日期','Last Backup Date')}: ${lastText}</div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
+  modal.classList.add('open');
+}
+function setAutoBackupInterval(ms){
+  autoBackupCfg.enabled=true;
+  autoBackupCfg.intervalMs=Number(ms)||10*60*1000;
+  saveAutoBackupCfg();
+  startAutoBackupTimer();
+  toast(t(`已开启定时备份，间隔 ${getAutoBackupIntervalLabel()}`,`Scheduled backup enabled: ${getAutoBackupIntervalLabel()}`),'info');
+  openAutoBackupDialog();
+}
+function disableAutoBackup(){
+  autoBackupCfg.enabled=false;
+  saveAutoBackupCfg();
+  startAutoBackupTimer();
+  toast(t('已关闭定时备份','Scheduled backup disabled'),'info');
+  openAutoBackupDialog();
+}
+function switchAutoBackupToDownload(){
+  autoBackupCfg.mode='download';
+  saveAutoBackupCfg();
+  toast(t('已切换为下载备份模式','Switched to download backup mode'),'info');
+  openAutoBackupDialog();
+}
+async function bindAutoBackupFileFromDialog(){
+  try{await bindAutoBackupFile();}catch(e){toast(t('绑定自动备份文件失败','Bind backup file failed'),'error');}
+  openAutoBackupDialog();
 }
 async function runManualBackupNow(){
   if(!autoBackupCfg.enabled){exportXlsx();return;}
@@ -1245,18 +1279,8 @@ async function prepareAutoBackupHandle(){
   if(autoBackupCfg.mode!=='file')return;
   try{autoBackupFileHandle=await loadAutoBackupHandle();}catch(e){autoBackupFileHandle=null;}
 }
-function triggerExitAutoBackup(reason){
-  if(!autoBackupCfg.enabled)return;
-  if(autoBackupExitTriggered)return;
-  autoBackupExitTriggered=true;
-  runAutoBackup(reason,true).catch(()=>{});
-  setTimeout(()=>{autoBackupExitTriggered=false;},3500);
-}
-window.addEventListener('pagehide',()=>{triggerExitAutoBackup('pagehide')});
-window.addEventListener('beforeunload',()=>{triggerExitAutoBackup('beforeunload')});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')triggerExitAutoBackup('hidden')});
-setInterval(()=>{runAutoBackup('interval',false).catch(()=>{})},180000);
 prepareAutoBackupHandle();
+startAutoBackupTimer();
 
 // ===== SAMPLE DATA =====
 function importSampleData(){

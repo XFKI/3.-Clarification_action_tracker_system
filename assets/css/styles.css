@@ -109,6 +109,9 @@ header{display:flex;align-items:flex-start;justify-content:space-between;padding
   display:flex;align-items:center;gap:5px;
 }
 .hdr-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.hdr-btn-backup{background:linear-gradient(135deg,var(--green),#16a34a);border-color:#15803d;color:#fff;font-weight:700;box-shadow:0 0 0 1px rgba(21,128,61,.25),0 6px 16px rgba(22,163,74,.28)}
+.hdr-btn-backup:hover{background:linear-gradient(135deg,#16a34a,#15803d);border-color:#166534;color:#fff;box-shadow:0 0 0 1px rgba(21,128,61,.35),0 8px 18px rgba(22,163,74,.34)}
+.hdr-btn-backup svg{stroke:#fff}
 .hdr-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
 .hdr-icon-btn{width:34px;justify-content:center;padding:6px}
 .hdr-icon-btn svg{width:16px;height:16px}
