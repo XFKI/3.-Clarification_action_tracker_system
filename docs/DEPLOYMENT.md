@@ -8,6 +8,7 @@ Keep the existing local backend startup path unchanged, while adding an online d
 
 - Local backend mode: `quick-start.bat --serve 5500`
 - Vercel web mode: `https://<domain>.vercel.app/?mode=web`
+- GitHub Pages web mode: `https://xfki.github.io/3.-Clarification_action_tracker_system/`
 
 ## Vercel Deploy (CLI)
 
@@ -44,6 +45,7 @@ Resolution:
 
 - Local backend mode keeps SQLite persistence and backend APIs.
 - Vercel web mode removes local Python dependency for restricted enterprise laptops.
+- GitHub Pages web mode provides an additional static-hosting path with GitHub Actions.
 
 ## Limitations on Vercel mode
 

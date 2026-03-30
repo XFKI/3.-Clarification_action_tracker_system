@@ -74,7 +74,7 @@ function isWebModeRequested(){
     if(String(q.get(WEB_MODE_PARAM)||'').toLowerCase()===WEB_MODE_VALUE)return true;
   }catch(e){/* ignore */}
   const host=String(window.location.hostname||'').toLowerCase();
-  return host.endsWith('.vercel.app');
+  return host.endsWith('.vercel.app')||host.endsWith('.github.io');
 }
 
 function t(zh,en){return uiLang==='en'?en:zh}
@@ -1840,4 +1840,3 @@ async function bootstrapApp(){
     toast(t('已进入网页本地模式（适合Vercel演示）','Web local mode enabled (good for Vercel demo)'),'info');
   }
 }
-

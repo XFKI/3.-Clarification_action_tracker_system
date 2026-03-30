@@ -8,7 +8,8 @@
 
 - 业务闭环完整：录入 -> 聚合 -> 跟踪 -> 复盘。
 - 架构轻量稳健：SPA + Python + SQLite，低维护、高可移植。
-- 双运行模式：本地后端生产模式 + Vercel 网页演示模式。
+- 双运行模式：本地后端生产模式 + 网页模式（Vercel / GitHub Pages）。
+- 三部署入口：本地后端生产模式 + Vercel 网页模式 + GitHub Pages 网页模式。
 - 工程可解释：状态归一化、批量更新、审计历史、回收站恢复。
 
 ## 系统全景图
@@ -110,6 +111,13 @@ pie title 核心模块占比
 - 示例：<https://your-project.vercel.app/?mode=web>
 
 注意：网页模式适合演示与受限环境，不建议作为唯一生产数据源。
+
+### 3.3 GitHub Pages 网页模式
+
+- 工作流文件：`.github/workflows/github-pages-deploy.yml`
+- 触发方式：推送到 `main` 自动发布，或在 Actions 手动运行 **Deploy to GitHub Pages**
+- 访问地址：<https://xfki.github.io/3.-Clarification_action_tracker_system/>
+- 模式识别：`github.io` 域名自动进入网页模式（无需追加 `?mode=web`）
 
 ## 4. Vercel 一键部署（含排错）
 

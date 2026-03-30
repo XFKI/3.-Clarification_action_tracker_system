@@ -7,6 +7,7 @@
 [🇨🇳 中文](README.md) &nbsp;|&nbsp; 🇬🇧 English
 
 [![Deploy on Vercel](https://img.shields.io/badge/Deploy_on-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy_to-GitHub_Pages-222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/Vanilla_JS-F7DF1E?logo=javascript&logoColor=black)
 ![Python](https://img.shields.io/badge/Python_3-3776AB?logo=python&logoColor=white)
@@ -90,6 +91,19 @@ quick-deploy-vercel.bat
 ```
 
 > ⚠️ Web mode uses browser localStorage / IndexedDB. Suitable for demos and restricted environments; not recommended as the sole production data source. Local backend mode is unaffected — both modes operate independently.
+
+### Mode 3: GitHub Pages Web Mode
+
+The repository now includes `.github/workflows/github-pages-deploy.yml` with two triggers:
+
+1. Auto deploy on push to `main`
+2. Manual run in Actions: **Deploy to GitHub Pages**
+
+After deployment, open:
+
+`https://xfki.github.io/3.-Clarification_action_tracker_system/`
+
+GitHub Pages domains are recognized as web mode automatically, so no `?mode=web` suffix is required.
 
 ## ⌨️ Keyboard Shortcuts
 
