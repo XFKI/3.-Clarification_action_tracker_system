@@ -1,5 +1,8 @@
 # Clarification Action Tracker System
 
+[![English](https://img.shields.io/badge/English-Primary-0B5FFF)](README.md)
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-%E5%88%87%E6%8D%A2-334155)](README.zh-CN.md)
+
 [![Platform: Web SPA](https://img.shields.io/badge/Platform-Web%20SPA-0B5FFF)](./index.html)
 [![Runtime: Dual Mode](https://img.shields.io/badge/Runtime-Local%20Backend%20%2B%20Web-0E7490)](./README.md#runtime-modes)
 [![Storage: SQLite/Web](https://img.shields.io/badge/Storage-SQLite%20or%20Browser-16A34A)](./README.md#architecture-at-a-glance)
@@ -7,11 +10,6 @@
 
 A lightweight engineering tracker for FLNG/FPSO EPC procurement design.
 It turns clarification and meeting records into actionable follow-up items, risk visibility, and export-ready reports.
-
-## Language
-
-- English (primary): this file
-- Chinese (companion): [README.zh-CN.md](README.zh-CN.md)
 
 ## Why This Exists
 
@@ -108,19 +106,19 @@ https://<your-domain>/?mode=web
 
 ## UI Preview
 
-> Place the 3 screenshots in [docs/screenshots](docs/screenshots) with the exact filenames below.
+Screenshots are stored in [docs/screenshots](docs/screenshots).
 
 ### 1) English Dashboard
 
-![English Dashboard](docs/screenshots/01-dashboard-en.png)
+![English Dashboard](docs/screenshots/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260330235223_206_339.png)
 
 ### 2) Chinese Dashboard
 
-![Chinese Dashboard](docs/screenshots/02-dashboard-zh.png)
+![Chinese Dashboard](docs/screenshots/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260330235239_207_339.png)
 
 ### 3) Actions Board
 
-![Actions Board](docs/screenshots/03-actions-board.png)
+![Actions Board](docs/screenshots/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260330235319_208_339.png)
 
 ## Project Structure
 

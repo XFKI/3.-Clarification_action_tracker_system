@@ -1,9 +1,9 @@
 # Screenshot Assets
 
-Put the three UI screenshots here with exact filenames:
+Current UI screenshots in this folder:
 
-1. 01-dashboard-en.png
-2. 02-dashboard-zh.png
-3. 03-actions-board.png
+1. 微信图片_20260330235223_206_339.png
+2. 微信图片_20260330235239_207_339.png
+3. 微信图片_20260330235319_208_339.png
 
-These files are referenced by README.md.
+These files are referenced by README.md and README.zh-CN.md.
