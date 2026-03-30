@@ -10,6 +10,10 @@ Keep the existing local backend startup path unchanged, while adding an online d
 - Vercel web mode: `https://<domain>.vercel.app/?mode=web`
 - GitHub Pages web mode: `https://xfki.github.io/3.-Clarification_action_tracker_system/`
 
+Current verified production alias:
+
+- `https://clarification-action-tracker-system.vercel.app/?mode=web`
+
 ## Vercel Deploy (CLI)
 
 1. Login:
@@ -27,6 +31,13 @@ Keep the existing local backend startup path unchanged, while adding an online d
 1. Windows one-click script (CMD / PowerShell):
 
 `quick-deploy-vercel.bat`
+
+## GitHub Deploy (Actions)
+
+1. Open GitHub Actions and run workflow: `.github/workflows/vercel-deploy.yml`
+2. Select target: `production` or `preview`
+3. Ensure repository secret `VERCEL_TOKEN` is configured
+4. Workflow calls `quick-deploy-vercel.sh` and publishes to Vercel
 
 1. Open with web mode query:
 

@@ -1,6 +1,4 @@
-# Clarification Action Tracker System（中文详细文档）
-
-[🏠 返回主页](README.md) &nbsp;|&nbsp; [🇬🇧 English](README.en.md)
+# Clarification Action Tracker System（中文）
 
 面向 FLNG/FPSO EPC 设备采购设计阶段的个人效率系统，用于技术澄清、会议行动、风险暴露与问题闭环。
 
@@ -8,8 +6,7 @@
 
 - 业务闭环完整：录入 -> 聚合 -> 跟踪 -> 复盘。
 - 架构轻量稳健：SPA + Python + SQLite，低维护、高可移植。
-- 双运行模式：本地后端生产模式 + 网页模式（Vercel / GitHub Pages）。
-- 三部署入口：本地后端生产模式 + Vercel 网页模式 + GitHub Pages 网页模式。
+- 双运行模式：本地后端生产模式 + Vercel 网页演示模式。
 - 工程可解释：状态归一化、批量更新、审计历史、回收站恢复。
 
 ## 系统全景图
@@ -93,6 +90,7 @@ pie title 核心模块占比
 - 批量状态/责任方/日期/优先级更新
 - 审计历史与回收站恢复
 - PDF 意见独立看板（导入、筛选、勾选导出）
+- 退出自动备份：可在退出页面时自动导出 Excel，降低浏览器缓存被清理后的丢数风险
 
 说明：文件管理看板当前临时下线，不影响主闭环流程。
 
@@ -112,12 +110,20 @@ pie title 核心模块占比
 
 注意：网页模式适合演示与受限环境，不建议作为唯一生产数据源。
 
-### 3.3 GitHub Pages 网页模式
+### 3.3 退出自动备份（防丢数）
 
-- 工作流文件：`.github/workflows/github-pages-deploy.yml`
-- 触发方式：推送到 `main` 自动发布，或在 Actions 手动运行 **Deploy to GitHub Pages**
-- 访问地址：<https://xfki.github.io/3.-Clarification_action_tracker_system/>
-- 模式识别：`github.io` 域名自动进入网页模式（无需追加 `?mode=web`）
+- 头部点击“自动备份设置”。
+- 选择 1：绑定本地 Excel 文件并开启自动备份（推荐）。
+  - 首次选择文件后，后续退出页面会自动覆盖写入同一文件。
+- 选择 2：开启下载备份模式（兜底）。
+  - 退出页面时自动触发下载一个时间戳 Excel。
+- 选择 3：关闭自动备份。
+- 选择 4：立即备份一次。
+
+说明：
+
+- “绑定本地文件自动写入”依赖浏览器 File System Access 能力（Chrome/Edge 新版通常可用）。
+- 若浏览器不支持或权限被拒绝，系统会自动降级为下载备份模式。
 
 ## 4. Vercel 一键部署（含排错）
 
@@ -134,13 +140,10 @@ pie title 核心模块占比
 1. 首次登录：npx vercel login
 2. 生产部署：npx vercel --prod --yes
 
-也可直接使用仓库一键脚本（Linux / macOS / Git Bash）：
+### 4.3 GitHub 部署方式
 
-- sh quick-deploy-vercel.sh
-
-Windows（CMD / PowerShell）可直接运行：
-
-- quick-deploy-vercel.bat
+- 本地手动发布：Windows 使用 quick-deploy-vercel.bat，Linux/macOS 使用 sh quick-deploy-vercel.sh。
+- GitHub Actions 发布：手动触发 `.github/workflows/vercel-deploy.yml`，并在仓库 Secrets 配置 `VERCEL_TOKEN`。
 
 若出现 token 无效：
 

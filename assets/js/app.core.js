@@ -74,7 +74,7 @@ function isWebModeRequested(){
     if(String(q.get(WEB_MODE_PARAM)||'').toLowerCase()===WEB_MODE_VALUE)return true;
   }catch(e){/* ignore */}
   const host=String(window.location.hostname||'').toLowerCase();
-  return host.endsWith('.vercel.app')||host.endsWith('.github.io');
+  return host.endsWith('.vercel.app');
 }
 
 function t(zh,en){return uiLang==='en'?en:zh}
@@ -1127,6 +1127,8 @@ function renderHeader(){
     <button class="hdr-btn" onclick="importSampleData()">${IC.db} ${t('示例数据','Sample')}</button>
     <button class="hdr-btn" onclick="clearCurrentProjectData()">${IC.trash} ${t('清空当前项目','Clear Project')}</button>
     <button class="hdr-btn" onclick="clearAllCachedData()">${IC.trash} ${t('一键清空','Clear All')}</button>
+    <button class="hdr-btn" onclick="openAutoBackupDialog()">${IC.save} ${t('自动备份设置','Auto Backup')}</button>
+    <button class="hdr-btn" onclick="runManualBackupNow()">${IC.download} ${t('立即备份','Backup Now')}</button>
     <button class="hdr-btn" onclick="document.getElementById('xlsxFileInput').click()">${IC.upload} ${t('导入Excel','Import Excel')}</button>
     <button class="hdr-btn" onclick="exportXlsx()">${IC.download} ${t('导出Excel','Export Excel')}</button>
   </div>`;
@@ -1840,3 +1842,4 @@ async function bootstrapApp(){
     toast(t('已进入网页本地模式（适合Vercel演示）','Web local mode enabled (good for Vercel demo)'),'info');
   }
 }
+

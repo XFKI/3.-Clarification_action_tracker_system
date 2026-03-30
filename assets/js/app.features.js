@@ -1053,7 +1053,7 @@ function attachmentNames(item){
   return all.join('; ');
 }
 
-function exportXlsx(){
+function buildMainWorkbook(){
   const wb=XLSX.utils.book_new();
   if(state.clarifications.length){
     const data=state.clarifications.map(i=>({'编号 ID':i.actionId,'优先级 Priority':i.priority,'专业 Discipline':i.discipline,'类型 Type':i.type,'来源 Source':i.source,'澄清内容 Clarification':i.clarification,'回复 Reply':i.reply,'责任方 Action By':i.actionBy,'开始日期 Open Date':i.openDate,'当前到期 Due Date':i.currentDueDate,'完成日期 Completion':i.completionDate,'状态 Status':normalizeStatus(i.status),'附件数 Attachment Count':totalAttachments(i),'附件名 Attachment Names':attachmentNames(i)}));
@@ -1063,10 +1063,200 @@ function exportXlsx(){
     const data=state.meetings.map(i=>({'编号 No':i.no,'优先级 Priority':i.priority,'议题 Subject':i.subject,'专业 Discipline':i.discipline,'澄清 Clarification':i.clarification,'回复 Reply':i.reply,'责任方 Action By':i.actionBy,'会议日期 Meeting Date':i.meetingDate,'计划日期(Due) Due Date':i.plannedDate,'状态 Status':normalizeStatus(i.status),'附件数 Attachment Count':totalAttachments(i),'附件名 Attachment Names':attachmentNames(i)}));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'会议纪要');
   }
+  return wb;
+}
+
+function buildMainExportFileName(stamp){
   const pName=projects.find(p=>p.id===activeProjectId)?.name||'export';
-  XLSX.writeFile(wb,`${pName}_${fmtDate(new Date())}.xlsx`);
+  return `${pName}_${stamp||fmtDate(new Date())}.xlsx`;
+}
+
+function exportXlsx(customName){
+  const wb=buildMainWorkbook();
+  XLSX.writeFile(wb,customName||buildMainExportFileName());
   toast(t('Excel导出成功','Excel exported'));
 }
+
+const AUTO_BACKUP_CFG_KEY='et_auto_backup_cfg_v1';
+const AUTO_BACKUP_DB_NAME='et_auto_backup_db';
+const AUTO_BACKUP_STORE='handles';
+const AUTO_BACKUP_HANDLE_KEY='main_excel_file';
+let autoBackupCfg=loadAutoBackupCfg();
+let autoBackupDbPromise=null;
+let autoBackupFileHandle=null;
+let autoBackupLastFingerprint='';
+let autoBackupExitTriggered=false;
+
+function loadAutoBackupCfg(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(AUTO_BACKUP_CFG_KEY)||'null');
+    if(!raw||typeof raw!=='object')return{enabled:false,mode:'download',lastBackupAt:''};
+    return{enabled:!!raw.enabled,mode:raw.mode==='file'?'file':'download',lastBackupAt:String(raw.lastBackupAt||'')};
+  }catch(e){
+    return{enabled:false,mode:'download',lastBackupAt:''};
+  }
+}
+function saveAutoBackupCfg(){localStorage.setItem(AUTO_BACKUP_CFG_KEY,JSON.stringify(autoBackupCfg));}
+function formatBackupStamp(){
+  const d=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+function autoBackupFingerprint(){
+  const maxUpd=arr=>Array.isArray(arr)?arr.reduce((m,i)=>{const v=String((i&&i.updatedAt)||'');return v>m?v:m;},''):'';
+  return JSON.stringify({
+    project:activeProjectId,
+    cl:state.clarifications.length,
+    mt:state.meetings.length,
+    tr:state.trash.length,
+    clUpd:maxUpd(state.clarifications),
+    mtUpd:maxUpd(state.meetings)
+  });
+}
+function openAutoBackupDb(){
+  if(autoBackupDbPromise)return autoBackupDbPromise;
+  autoBackupDbPromise=new Promise((resolve,reject)=>{
+    if(!window.indexedDB){resolve(null);return;}
+    const req=indexedDB.open(AUTO_BACKUP_DB_NAME,1);
+    req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(AUTO_BACKUP_STORE))db.createObjectStore(AUTO_BACKUP_STORE,{keyPath:'id'})};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('open auto backup db failed'));
+  });
+  return autoBackupDbPromise;
+}
+async function saveAutoBackupHandle(handle){
+  const db=await openAutoBackupDb();
+  if(!db)return false;
+  return await new Promise((resolve,reject)=>{
+    const tx=db.transaction(AUTO_BACKUP_STORE,'readwrite');
+    const req=tx.objectStore(AUTO_BACKUP_STORE).put({id:AUTO_BACKUP_HANDLE_KEY,handle,updatedAt:nowIso()});
+    req.onsuccess=()=>resolve(true);
+    req.onerror=()=>reject(req.error||new Error('save handle failed'));
+  });
+}
+async function loadAutoBackupHandle(){
+  const db=await openAutoBackupDb();
+  if(!db)return null;
+  return await new Promise((resolve,reject)=>{
+    const tx=db.transaction(AUTO_BACKUP_STORE,'readonly');
+    const req=tx.objectStore(AUTO_BACKUP_STORE).get(AUTO_BACKUP_HANDLE_KEY);
+    req.onsuccess=()=>resolve(req.result?req.result.handle:null);
+    req.onerror=()=>reject(req.error||new Error('load handle failed'));
+  });
+}
+async function ensureFileHandlePermission(handle,requestWrite){
+  if(!handle||typeof handle.queryPermission!=='function')return false;
+  const opts={mode:requestWrite?'readwrite':'read'};
+  try{
+    let perm=await handle.queryPermission(opts);
+    if(perm==='granted')return true;
+    perm=await handle.requestPermission(opts);
+    return perm==='granted';
+  }catch(e){return false;}
+}
+function workbookToBlob(wb){
+  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  return new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+async function writeWorkbookToHandle(handle,wb){
+  const granted=await ensureFileHandlePermission(handle,true);
+  if(!granted)throw new Error('permission denied');
+  const writable=await handle.createWritable();
+  await writable.write(workbookToBlob(wb));
+  await writable.close();
+}
+async function runAutoBackup(reason,allowDownloadFallback){
+  if(!autoBackupCfg.enabled)return;
+  const fp=autoBackupFingerprint();
+  if(fp===autoBackupLastFingerprint&&reason!=='manual')return;
+  const wb=buildMainWorkbook();
+  if(autoBackupCfg.mode==='file'){
+    if(!autoBackupFileHandle)autoBackupFileHandle=await loadAutoBackupHandle();
+    if(autoBackupFileHandle){
+      try{
+        await writeWorkbookToHandle(autoBackupFileHandle,wb);
+        autoBackupCfg.lastBackupAt=nowIso();
+        autoBackupLastFingerprint=fp;
+        saveAutoBackupCfg();
+        if(reason==='manual')toast(t('已写入自动备份文件','Backup file updated'));
+        return;
+      }catch(e){
+        if(!allowDownloadFallback)return;
+      }
+    }
+    if(!allowDownloadFallback)return;
+  }
+  if(autoBackupCfg.mode==='download'||allowDownloadFallback){
+    XLSX.writeFile(wb,buildMainExportFileName(formatBackupStamp()));
+    autoBackupCfg.lastBackupAt=nowIso();
+    autoBackupLastFingerprint=fp;
+    saveAutoBackupCfg();
+    if(reason==='manual')toast(t('已执行备份下载','Backup downloaded'));
+  }
+}
+async function bindAutoBackupFile(){
+  if(typeof window.showSaveFilePicker!=='function'){
+    autoBackupCfg.enabled=true;
+    autoBackupCfg.mode='download';
+    saveAutoBackupCfg();
+    toast(t('浏览器不支持文件直写，已切换下载备份模式','File write not supported, switched to download mode'),'error');
+    return;
+  }
+  const handle=await window.showSaveFilePicker({
+    suggestedName:buildMainExportFileName('autosave'),
+    types:[{description:'Excel Workbook',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}]
+  });
+  const granted=await ensureFileHandlePermission(handle,true);
+  if(!granted){toast(t('未获得写入权限','Write permission denied'),'error');return;}
+  await saveAutoBackupHandle(handle);
+  autoBackupFileHandle=handle;
+  autoBackupCfg.enabled=true;
+  autoBackupCfg.mode='file';
+  saveAutoBackupCfg();
+  await runAutoBackup('manual',true);
+  toast(t('已绑定自动备份文件，退出时自动覆盖写入','Auto backup file bound for exit updates'),'info');
+}
+async function openAutoBackupDialog(){
+  const status=t('当前状态','Current')+`: ${autoBackupCfg.enabled?(autoBackupCfg.mode==='file'?t('已开启（写入本地文件）','Enabled (write to local file)'):t('已开启（下载备份）','Enabled (download)')):t('已关闭','Disabled')}`;
+  const help=t('输入 1: 绑定本地文件并开启自动备份\n输入 2: 开启下载备份模式\n输入 3: 关闭自动备份\n输入 4: 立即备份一次','Input 1: bind local file + enable auto backup\nInput 2: enable download backup mode\nInput 3: disable auto backup\nInput 4: backup now once');
+  const choice=(prompt(`${status}\n\n${help}`,'1')||'').trim();
+  if(!choice)return;
+  if(choice==='1'){try{await bindAutoBackupFile();}catch(e){toast(t('绑定自动备份文件失败','Bind backup file failed'),'error')}return;}
+  if(choice==='2'){
+    autoBackupCfg.enabled=true;
+    autoBackupCfg.mode='download';
+    saveAutoBackupCfg();
+    toast(t('已开启下载备份模式（退出时自动下载）','Download backup mode enabled'),'info');
+    return;
+  }
+  if(choice==='3'){
+    autoBackupCfg.enabled=false;
+    saveAutoBackupCfg();
+    toast(t('已关闭自动备份','Auto backup disabled'),'info');
+    return;
+  }
+  if(choice==='4')await runAutoBackup('manual',true);
+}
+async function runManualBackupNow(){
+  if(!autoBackupCfg.enabled){exportXlsx();return;}
+  await runAutoBackup('manual',true);
+}
+async function prepareAutoBackupHandle(){
+  if(autoBackupCfg.mode!=='file')return;
+  try{autoBackupFileHandle=await loadAutoBackupHandle();}catch(e){autoBackupFileHandle=null;}
+}
+function triggerExitAutoBackup(reason){
+  if(!autoBackupCfg.enabled)return;
+  if(autoBackupExitTriggered)return;
+  autoBackupExitTriggered=true;
+  runAutoBackup(reason,true).catch(()=>{});
+  setTimeout(()=>{autoBackupExitTriggered=false;},3500);
+}
+window.addEventListener('pagehide',()=>{triggerExitAutoBackup('pagehide')});
+window.addEventListener('beforeunload',()=>{triggerExitAutoBackup('beforeunload')});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')triggerExitAutoBackup('hidden')});
+setInterval(()=>{runAutoBackup('interval',false).catch(()=>{})},180000);
+prepareAutoBackupHandle();
 
 // ===== SAMPLE DATA =====
 function importSampleData(){
