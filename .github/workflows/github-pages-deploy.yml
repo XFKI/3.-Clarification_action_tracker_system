@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - copilot/**
   workflow_dispatch:
 
 permissions:
@@ -29,10 +28,17 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare static site
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp index.html _site/
+          cp -R assets _site/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: ./_site
 
       - name: Deploy to GitHub Pages
         id: deployment
