@@ -12,6 +12,9 @@ on:
           - production
           - preview
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
