@@ -74,7 +74,7 @@ function isWebModeRequested(){
     if(String(q.get(WEB_MODE_PARAM)||'').toLowerCase()===WEB_MODE_VALUE)return true;
   }catch(e){/* ignore */}
   const host=String(window.location.hostname||'').toLowerCase();
-  return host.endsWith('.vercel.app');
+  return host.endsWith('.vercel.app')||host.endsWith('.github.io');
 }
 
 function t(zh,en){return uiLang==='en'?en:zh}
@@ -141,7 +141,7 @@ function saveDocBoard(){
 function newClientId(){return`client_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`}
 
 function renderBackendRequiredScreen(){
-  document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e2e8f0;padding:24px;font-family:'Microsoft YaHei','Segoe UI',sans-serif"><div style="max-width:720px;border:1px solid #334155;border-radius:12px;padding:24px;background:#111827"><h2 style="margin:0 0 12px">${t('后端未启动，已阻断进入','Backend is required and not running')}</h2><p style="margin:0 0 10px;line-height:1.6">${t('本版本默认强制后端模式：意见和附件仅存储在项目目录数据库中。','This build uses forced backend mode by default: records and attachments are stored in project-folder DB.')}</p><p style="margin:0 0 10px;line-height:1.6">${t('请先运行 quick-start.bat（或 quick-start.sh），再刷新页面。','Run quick-start.bat (or quick-start.sh) first, then refresh this page.')}</p><p style="margin:0 0 16px;line-height:1.6">${t('若已部署到 Vercel，可在地址后追加 ?mode=web 进入网页本地模式。','If deployed on Vercel, append ?mode=web to URL to use web local mode.')}</p><button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer">${t('刷新重试','Retry')}</button></div></div>`;
+  document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e2e8f0;padding:24px;font-family:'Microsoft YaHei','Segoe UI',sans-serif"><div style="max-width:720px;border:1px solid #334155;border-radius:12px;padding:24px;background:#111827"><h2 style="margin:0 0 12px">${t('后端未启动，已阻断进入','Backend is required and not running')}</h2><p style="margin:0 0 10px;line-height:1.6">${t('本版本默认强制后端模式：意见和附件仅存储在项目目录数据库中。','This build uses forced backend mode by default: records and attachments are stored in project-folder DB.')}</p><p style="margin:0 0 10px;line-height:1.6">${t('请先运行 quick-start.bat（或 quick-start.sh），再刷新页面。','Run quick-start.bat (or quick-start.sh) first, then refresh this page.')}</p><p style="margin:0 0 16px;line-height:1.6">${t('若已部署到 Vercel 或 GitHub Pages，可在地址后追加 ?mode=web 进入网页本地模式。','If deployed on Vercel or GitHub Pages, append ?mode=web to URL to use web local mode.')}</p><button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer">${t('刷新重试','Retry')}</button></div></div>`;
 }
 
 async function apiRequest(path,options){
