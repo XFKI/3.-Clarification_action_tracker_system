@@ -13,10 +13,58 @@
 - 轻量架构：Vanilla JS + Python + SQLite，低运维成本
 - 双运行模式：本地强制后端模式（生产） + Vercel 网页模式（演示）
 
+## 系统可视化速览
+
+```mermaid
+flowchart LR
+  A[Clarifications] --> C[Actions]
+  B[Meetings] --> C
+  C --> D[Dashboard]
+  A --> E[Excel]
+  B --> E
+  F[PDF Comments] --> E
+```
+
+```mermaid
+flowchart TB
+  subgraph Local[Local Backend Mode]
+    L1[Python API]
+    L2[SQLite]
+  end
+  subgraph Web[Vercel Web Mode]
+    W1[Static Site]
+    W2[Browser Storage]
+  end
+  UI[SPA Frontend] --> L1 --> L2
+  UI --> W1 --> W2
+```
+
+```mermaid
+pie title Module Focus
+  "Input & Editing" : 28
+  "Action Tracking" : 24
+  "Risk Dashboard" : 18
+  "Import/Export" : 16
+  "Audit & Recovery" : 14
+```
+
 ## 快速开始
 
 - 本地后端模式（推荐）：`quick-start.bat --serve 5500`
 - Vercel 网页模式：部署后访问 `https://<your-project>.vercel.app/?mode=web`
+
+### Vercel 直接部署
+
+1. Vercel 控制台选择 Add New Project。
+2. 导入仓库：XFKI/3.-Clarification_action_tracker_system。
+3. Framework 选择 Other，Build Command 留空。
+4. 部署完成后访问：你的域名 + ?mode=web。
+
+CLI 方式：
+
+- 登录：npx vercel login
+- 部署：npx vercel --prod --yes
+- 若报 token 无效：重新登录或更新 token。
 
 ## 技术栈（简版）
 
@@ -25,6 +73,18 @@
 - Backend: Python http.server
 - Storage: SQLite (local backend mode)
 - Deployment: Vercel Static Hosting (web demo mode)
+
+## 技术栈（工程化视角）
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| UI/Interaction | Vanilla JS | 低依赖、部署轻、可离线 |
+| Visualization | Chart.js | 快速表达工程 KPI 与风险趋势 |
+| Data Exchange | SheetJS | 与工程常用 Excel 工作流无缝衔接 |
+| Local API | Python http.server | 脚本化启动简单，适合内网环境 |
+| Persistence | SQLite | 单文件数据库，备份/迁移友好 |
+| PDF Mining | PyMuPDF | 工程批注抽取稳定 |
+| Web Delivery | Vercel | 受限办公终端下可在线访问 |
 
 ---
 

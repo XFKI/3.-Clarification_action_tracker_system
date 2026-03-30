@@ -9,6 +9,29 @@ Keep the existing local backend startup path unchanged, while adding an online d
 - Local backend mode: `quick-start.bat --serve 5500`
 - Vercel web mode: `https://<domain>.vercel.app/?mode=web`
 
+## Vercel Deploy (CLI)
+
+1. Login:
+
+`npx vercel login`
+
+1. Deploy production:
+
+`npx vercel --prod --yes`
+
+1. Open with web mode query:
+
+`https://<domain>.vercel.app/?mode=web`
+
+## Common Error
+
+- Error: `The specified token is not valid`
+
+Resolution:
+
+1. Re-login with `npx vercel login`.
+2. Or generate a new token in Vercel account settings and re-run deploy.
+
 ## Why two modes
 
 - Local backend mode keeps SQLite persistence and backend APIs.
