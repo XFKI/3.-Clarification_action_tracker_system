@@ -11,7 +11,7 @@ if /I "%~1"=="-h" goto :help
 if /I "%~1"=="--preview" set "MODE=preview"
 
 where npx >nul 2>nul
-if not "%ERRORLEVEL%"=="0" (
+if %ERRORLEVEL% neq 0 (
   echo [quick-deploy-vercel] npx not found. Please install Node.js first.
   exit /b 1
 )
