@@ -8,6 +8,9 @@
 [![Storage: SQLite/Web](https://img.shields.io/badge/Storage-SQLite%20or%20Browser-16A34A)](./README.md#architecture-at-a-glance)
 [![License: Internal Use](https://img.shields.io/badge/License-Internal-lightgrey)](./README.md)
 
+[![Deploy to Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![Deploy GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
+
 A lightweight engineering tracker for FLNG/FPSO EPC procurement design.
 It turns clarification and meeting records into actionable follow-up items, risk visibility, and export-ready reports.
 
@@ -137,6 +140,11 @@ README.zh-CN.md
 ```
 
 ## Deployment
+
+### One-Click Deploy
+
+[![Deploy to Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![Deploy GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
 
 ### Vercel
 

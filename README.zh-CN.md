@@ -8,6 +8,9 @@
 [![存储: SQLite/Web](https://img.shields.io/badge/Storage-SQLite%20or%20Browser-16A34A)](./README.zh-CN.md#架构速览)
 [![许可: Internal Use](https://img.shields.io/badge/License-Internal-lightgrey)](./README.zh-CN.md)
 
+[![一键部署到 Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![一键部署 GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
+
 面向 FLNG/FPSO EPC 设备采购设计阶段的轻量跟踪系统。
 将技术澄清与会议记录转化为可执行行动、风险可视化与可导出汇报数据。
 
@@ -137,6 +140,11 @@ README.zh-CN.md
 ```
 
 ## 部署
+
+### 一键部署
+
+[![一键部署到 Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![一键部署 GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
 
 ### Vercel
 
