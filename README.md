@@ -7,6 +7,7 @@
 🇨🇳 中文 &nbsp;|&nbsp; [🇬🇧 English](README.en.md)
 
 [![Deploy on Vercel](https://img.shields.io/badge/Deploy_on-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy_to-GitHub_Pages-222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/Vanilla_JS-F7DF1E?logo=javascript&logoColor=black)
 ![Python](https://img.shields.io/badge/Python_3-3776AB?logo=python&logoColor=white)
@@ -90,6 +91,17 @@ quick-deploy-vercel.bat
 ```
 
 > ⚠️ 网页模式使用浏览器 localStorage / IndexedDB 存储数据，适合演示与受限环境，不建议作为唯一生产数据源。本地后端模式不受影响，两种模式互不干扰。
+
+### 方式三：GitHub Pages 网页模式
+
+仓库已内置 GitHub Actions 工作流 `.github/workflows/github-pages-deploy.yml`，支持两种触发方式：
+
+1. 推送到 `main` 分支自动发布
+2. 在 Actions 页面手动运行 **Deploy to GitHub Pages**
+
+发布后可通过以下地址访问（自动进入网页模式，无需追加 `?mode=web`）：
+
+`https://xfki.github.io/3.-Clarification_action_tracker_system/`
 
 ## ⌨️ 常用快捷键
 
