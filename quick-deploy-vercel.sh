@@ -40,4 +40,3 @@ else
     npx vercel --prod --yes
   fi
 fi
-
