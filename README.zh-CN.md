@@ -1,4 +1,6 @@
-# Clarification Action Tracker System（中文）
+# Clarification Action Tracker System（中文详细文档）
+
+[🏠 返回主页](README.md) &nbsp;|&nbsp; [🇬🇧 English](README.en.md)
 
 面向 FLNG/FPSO EPC 设备采购设计阶段的个人效率系统，用于技术澄清、会议行动、风险暴露与问题闭环。
 

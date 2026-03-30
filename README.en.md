@@ -1,96 +1,117 @@
-# Clarification Action Tracker System (English)
+<div align="center">
 
-A personal productivity system for FLNG/FPSO EPC equipment procurement design, focused on technical clarification logging, action closure, and risk tracking.
+# Clarification & Action Tracker System
 
-## Resume Highlights
+**Engineering Tracker for FLNG/FPSO EPC Procurement Design**
 
-- Clear business impact: improves data entry speed, tracking visibility, closure rate, and review efficiency.
-- End-to-end architecture: SPA frontend + lightweight Python backend + SQLite for reliable local operation.
-- Closed-loop workflow: Clarification/Meeting input -> Action aggregation -> Dashboard analytics -> Excel I/O.
-- Engineering quality: status normalization, batch operations, risk exposure, audit history, recycle restore.
-- Deployment strategy: keep local forced-backend mode while enabling Vercel web-demo mode.
+[🇨🇳 中文](README.md) &nbsp;|&nbsp; 🇬🇧 English
 
-## 1. Tech Stack
+[![Deploy on Vercel](https://img.shields.io/badge/Deploy_on-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![JavaScript](https://img.shields.io/badge/Vanilla_JS-F7DF1E?logo=javascript&logoColor=black)
+![Python](https://img.shields.io/badge/Python_3-3776AB?logo=python&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
 
-- Frontend: HTML5, CSS3, Vanilla JavaScript (ES6)
-- Visualization: Chart.js
-- Excel Integration: SheetJS (xlsx)
-- Local Backend: Python 3 + http.server
-- Local DB: SQLite
-- PDF Comment Extraction: PyMuPDF (backend-first)
-- Scripts: batch/shell scripts
-- Web Deployment: Vercel Static Hosting
+</div>
 
-## 2. Core Features
+> A personal productivity tool for FLNG/FPSO EPC equipment procurement design. Structured intake for technical clarifications and meeting actions, automatic aggregation of open items, overdue risk exposure — runs in both **local SQLite backend mode** and **Vercel web mode**, with zero framework dependencies and offline support.
 
-- Structured Clarification and Meeting records
-- Auto-generated Action board for open items
-- Due/overdue/high-priority risk visibility
-- Batch update for status, owner, date, and priority
-- Auditability with metadata and change history
-- Recycle/restore and cleanup support
-- Independent PDF comment board: import, filter, selective export
+---
 
-Note: The document management board is temporarily disabled and does not affect core workflow.
+## ✨ Core Features
 
-## 3. Runtime Modes
+| Module | Description |
+|--------|-------------|
+| 📋 **Structured Intake** | Inline editing for clarifications/meetings, field validation, custom dictionaries |
+| 🔁 **Action Aggregation** | Auto-collect open items; closure writes back to source records |
+| ⚠️ **Risk Exposure** | Overdue / high-priority / owner workload, combined filters |
+| 📊 **Dashboard** | KPI cards + Chart.js charts, 7-day trend |
+| 📁 **Excel I/O** | SheetJS bidirectional import/export, compatible with team workflows |
+| 🗂️ **PDF Comments** | Batch PDF annotation extraction, independent board and export |
+| 🔍 **Audit Trail** | Field change history + recycle bin restore |
 
-### 3.1 Local Backend Mode (recommended for production)
+## 🛠️ Tech Stack
 
-- Behavior: forced backend mode, data and attachments stored in local SQLite.
-- Start:
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| Frontend | Vanilla JS (ES6) · HTML5 · CSS3 | Zero-dependency, offline-capable |
+| Visualization | Chart.js | KPI & risk trend charts |
+| Data Exchange | SheetJS (xlsx) | Excel round-trip integration |
+| Local Service | Python 3 · http.server | Script-based startup, Windows batch friendly |
+| Persistence | SQLite | Single-file DB, easy backup & migration |
+| PDF Extraction | PyMuPDF | Stable engineering annotation extraction |
+| Web Deployment | Vercel Static Hosting | Online access for restricted office environments |
+
+## 🚀 Running Modes
+
+### Mode 1: Local Backend Mode (Recommended — persistent data)
 
 ```bat
+REM Windows
 quick-start.bat --serve 5500
 ```
 
-or
-
 ```bash
+# Linux / macOS
 sh quick-start.sh 5500
 ```
 
-### 3.2 Vercel Web Mode (recommended for demo)
+The script starts `backend/server.py` in the background; data is saved to `data/tracker.db`. You can close the terminal after startup. To stop:
 
-- Behavior: no local Python process required, suitable for restricted enterprise laptops.
-- Access pattern: append `?mode=web` to the deployed URL.
-- Example: `https://your-project.vercel.app/?mode=web`
-
-Important: web mode uses browser local storage; do not treat it as the only production data source.
-
-## 4. Deploy to Vercel
-
-1. Push this repository to GitHub.
-2. In Vercel, click `Add New Project` and import this repo.
-3. Select `Other` framework, no build command needed.
-4. Deploy from root directory.
-5. Open `https://xxx.vercel.app/?mode=web`.
-
-Included in this repo:
-
-- `.vercelignore` (excludes backend/data/large files)
-- `vercel.json` (static deployment config)
-
-## 5. Project Structure
-
-```text
-index.html
-assets/
-  css/styles.css
-  js/app.core.js
-  js/app.features.js
-backend/
-data/
-README.md
-README.zh-CN.md
-README.en.md
-.vercelignore
-vercel.json
-.gitignore
+```bat
+quick-stop.bat 5500
 ```
 
-## 6. Resume-ready Description
+### Mode 2: Vercel Web Mode (Recommended for restricted company laptops)
 
-- Built a clarification and action-tracking system for EPC equipment engineering, covering a full loop from intake to closure and retrospective analysis.
-- Implemented a lightweight stack (Vanilla JS + Python + SQLite) with batch updates, risk dashboarding, audit history, and Excel round-trip integration.
-- Delivered dual runtime strategy: reliable local forced-backend mode and Vercel web mode for online demos in restricted office environments.
+**Dashboard deploy (recommended):**
+
+1. Click the Deploy on Vercel badge above, or import `XFKI/3.-Clarification_action_tracker_system` on [vercel.com](https://vercel.com)
+2. Select Framework: **Other**, leave Build Command **blank**, then Deploy
+3. Visit the generated URL (`.vercel.app` domains auto-activate web mode — no extra parameter needed)
+
+**CLI deploy:**
+
+```bash
+npx vercel login
+npx vercel --prod --yes
+```
+
+> ⚠️ Web mode uses browser localStorage / IndexedDB. Suitable for demos and restricted environments; not recommended as the sole production data source. Local backend mode is unaffected — both modes operate independently.
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl + N` | Add new entry |
+| `Ctrl + S` | Save current edit |
+| `Ctrl + Shift + X` | Quick-close focused row |
+| `Alt + 1~5` | Switch main tabs |
+
+## 📁 Project Structure
+
+```text
+index.html                   # App entry point (SPA)
+assets/
+  css/styles.css             # Global styles
+  js/app.core.js             # Core logic: data, backend sync, state management
+  js/app.features.js         # Feature modules: rendering, import/export, charts
+backend/
+  server.py                  # Python local API server
+  extract_pdf_comments.py    # PDF annotation offline extraction script
+data/
+  tracker.db                 # Local SQLite (auto-created on startup)
+vercel.json                  # Vercel static deployment config
+.vercelignore                # Excludes backend / data and other backend directories
+```
+
+## Recommended Workflow
+
+1. Input or import Excel in **Clarifications / Meetings**
+2. Process **Actions** daily (order: Overdue → HIGH → Due in 7 days)
+3. Review owner risk and weekly workload in **Dashboard**
+4. Export Excel weekly; always export a backup before clearing data
+
+---
+
+> This is a local single-machine tool. It does not include server-side backup, access control, or multi-device sync. See [README.zh-CN.md](README.zh-CN.md) for full technical documentation (Chinese).
