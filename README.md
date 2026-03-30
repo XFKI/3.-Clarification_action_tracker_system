@@ -1,27 +1,40 @@
+<div align="center">
+
 # Clarification Action Tracker System
 
+**Clarification & Action Tracker · FLNG/FPSO EPC**
+
 [![English](https://img.shields.io/badge/English-Primary-0B5FFF)](README.md)
-[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-%E5%88%87%E6%8D%A2-334155)](README.zh-CN.md)
+[![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-Switch-334155)](README.zh-CN.md)
 
-[![Platform: Web SPA](https://img.shields.io/badge/Platform-Web%20SPA-0B5FFF)](./index.html)
-[![Runtime: Dual Mode](https://img.shields.io/badge/Runtime-Local%20Backend%20%2B%20Web-0E7490)](./README.md#runtime-modes)
-[![Storage: SQLite/Web](https://img.shields.io/badge/Storage-SQLite%20or%20Browser-16A34A)](./README.md#architecture-at-a-glance)
-[![License: Internal Use](https://img.shields.io/badge/License-Internal-lightgrey)](./README.md)
+[![Deploy on Vercel](https://img.shields.io/badge/Deploy_on-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy_to-GitHub_Pages-222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
 
-[![Deploy to Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
-[![Deploy GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![Vanilla JS](https://img.shields.io/badge/Vanilla_JS-F7DF1E?logo=javascript&logoColor=black)
+![Python](https://img.shields.io/badge/Python_3-3776AB?logo=python&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
+
+</div>
 
 A lightweight engineering tracker for FLNG/FPSO EPC procurement design.
-It turns clarification and meeting records into actionable follow-up items, risk visibility, and export-ready reports.
+It converts clarification and meeting records into actionable tasks, risk visibility, and export-ready reporting.
 
-## Why This Exists
+---
 
-- Faster intake: structured Clarification and Meeting records
-- Faster tracking: auto-aggregated open Actions with due/overdue visibility
-- Faster closure: one-place status push and source writeback
-- Faster review: dashboard KPIs + Excel import/export
+## Highlights
 
-## Architecture At A Glance
+| Module | Value |
+| --- | --- |
+| Structured Input | Clarification/Meeting records with inline edit and validation |
+| Action Aggregation | Auto-build open actions and support source writeback |
+| Risk Exposure | Overdue, high-priority, owner workload, due-soon |
+| Dashboard | KPI cards + Chart.js trend views |
+| Excel I/O | SheetJS import/export for engineering handover |
+| PDF Comments | Extract, review, and export PDF annotations |
+| Auditability | Change history + recycle/restore |
+
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -49,67 +62,55 @@ flowchart TB
   UI --> W1 --> W2
 ```
 
-## Tech Stack
-
-| Layer | Choice | Why It Helps |
-| --- | --- | --- |
-| Frontend | HTML5 + CSS3 + Vanilla JavaScript | Fast, portable, no framework overhead |
-| Visualization | Chart.js | Clear KPI and trend charts |
-| Excel I/O | SheetJS (xlsx) | Fits common engineering handover format |
-| Local Backend | Python http.server | Easy startup in restricted enterprise PCs |
-| Persistence | SQLite | Single-file local reliability |
-| PDF Extraction | PyMuPDF | Practical comment extraction workflow |
-| Deployment | Vercel / GitHub Pages | Quick online demo and sharing |
-
 ## Runtime Modes
 
-### Local Backend Mode (recommended for daily work)
-
-- Uses local SQLite for structured data and attachments
-- Start on Windows:
+### 1) Local Backend Mode (recommended)
 
 ```bat
 quick-start.bat --serve 5500
 ```
 
-- Start on Linux/macOS:
-
 ```bash
 sh quick-start.sh 5500
 ```
 
-### Web Mode (recommended for demos)
+- Data and attachments are persisted in local SQLite.
+- Stop backend:
 
-- No local Python process required
-- URL example:
-
-```text
-https://<your-domain>/?mode=web
+```bat
+quick-stop.bat 5500
 ```
 
-- Data is browser-scoped, so keep periodic exports/backups
+### 2) Web Mode (Vercel / GitHub Pages)
 
-## Core Workflow
+- Vercel URL:
 
-1. Log source issues in Clarifications and Meetings.
-2. Work from Actions (overdue -> high priority -> due soon).
-3. Use Dashboard for owner load and closure trend.
-4. Export Excel for handover and archival.
+```text
+https://<your-domain>.vercel.app/?mode=web
+```
 
-## Key Features
+- GitHub Pages URL:
 
-- Structured records for Clarifications and Meetings
-- Auto-generated Actions board for open items
-- Batch updates (status, owner, dates, priority)
-- Risk visibility (overdue, high-priority, owner load)
-- Audit metadata and history traces
-- Recycle and restore support
-- Independent PDF comments board
-- Scheduled/Manual backup options for safer web-mode usage
+```text
+https://xfki.github.io/3.-Clarification_action_tracker_system/
+```
+
+- Browser storage is used in web mode, suitable for demo/restricted devices.
+
+## Deployment
+
+### One-Click Deploy
+
+[![Deploy on Vercel](https://img.shields.io/badge/Deploy_on-Vercel-black?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
+[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy_to-GitHub_Pages-222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
+
+### Manual Notes
+
+1. Vercel: Framework = Other, Build command empty.
+2. GitHub Pages: run `.github/workflows/github-pages-deploy.yml`.
+3. For Vercel demo, append `?mode=web` if needed.
 
 ## UI Preview
-
-Screenshots are stored in [docs/screenshots](docs/screenshots).
 
 ### 1) English Dashboard
 
@@ -122,6 +123,13 @@ Screenshots are stored in [docs/screenshots](docs/screenshots).
 ### 3) Actions Board
 
 ![Actions Board](docs/screenshots/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20260330235319_208_339.png)
+
+## Quick Workflow
+
+1. Input new records in Clarifications/Meetings.
+2. Work from Actions: overdue -> high-priority -> due soon.
+3. Review owner risks in Dashboard.
+4. Export Excel for weekly handover/archive.
 
 ## Project Structure
 
@@ -139,36 +147,8 @@ README.md
 README.zh-CN.md
 ```
 
-## Deployment
-
-### One-Click Deploy
-
-[![Deploy to Vercel](https://img.shields.io/badge/Deploy%20to-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/new/clone?repository-url=https://github.com/XFKI/3.-Clarification_action_tracker_system)
-[![Deploy GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-222222?logo=github&logoColor=white)](https://github.com/XFKI/3.-Clarification_action_tracker_system/actions/workflows/github-pages-deploy.yml)
-
-### Vercel
-
-1. Import repository in Vercel.
-2. Select framework: Other.
-3. Keep build command empty.
-4. Deploy from root and open with ?mode=web.
-
-### GitHub Pages
-
-- Use repository workflow in [.github/workflows/github-pages-deploy.yml](.github/workflows/github-pages-deploy.yml)
-- Open deployed URL with ?mode=web
-
-## Validation Checklist
-
-- App starts in local backend mode
-- App starts in web mode with ?mode=web
-- Clarification/Meeting -> Action aggregation works
-- Dashboard KPI/charts render correctly
-- Excel import/export works
-- Backup action works in target browser
-
 ## Notes
 
 - Document management board is temporarily disabled and does not block core workflow.
-- Current status values in use: OPEN / IN_PROGRESS / INFO / CLOSED.
-- Long-term normalization target remains OPEN / IN_PROGRESS / CLOSED.
+- Current status values: OPEN / IN_PROGRESS / INFO / CLOSED.
+- Long-term normalization target: OPEN / IN_PROGRESS / CLOSED.
