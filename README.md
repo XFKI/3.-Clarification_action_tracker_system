@@ -83,6 +83,12 @@ npx vercel --prod --yes
 sh quick-deploy-vercel.sh
 ```
 
+Windows（CMD / PowerShell）可直接运行：
+
+```bat
+quick-deploy-vercel.bat
+```
+
 > ⚠️ 网页模式使用浏览器 localStorage / IndexedDB 存储数据，适合演示与受限环境，不建议作为唯一生产数据源。本地后端模式不受影响，两种模式互不干扰。
 
 ## ⌨️ 常用快捷键

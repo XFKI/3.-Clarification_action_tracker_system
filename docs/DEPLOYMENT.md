@@ -23,6 +23,10 @@ Keep the existing local backend startup path unchanged, while adding an online d
 
 `sh quick-deploy-vercel.sh`
 
+1. Windows one-click script (CMD / PowerShell):
+
+`quick-deploy-vercel.bat`
+
 1. Open with web mode query:
 
 `https://<domain>.vercel.app/?mode=web`

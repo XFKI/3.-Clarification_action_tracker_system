@@ -130,6 +130,10 @@ pie title 核心模块占比
 
 - sh quick-deploy-vercel.sh
 
+Windows（CMD / PowerShell）可直接运行：
+
+- quick-deploy-vercel.bat
+
 若出现 token 无效：
 
 - 原因：本机 Vercel token 失效或未登录。
