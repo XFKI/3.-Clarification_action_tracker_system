@@ -671,17 +671,7 @@ def _extract_comments_pymupdf(data: bytes, limit: int = 200) -> list:
             annot = page.first_annot
             while annot:
                 info = annot.info or {}
-                candidates = [
-                    info.get("content"),
-                    info.get("subject"),
-                    info.get("title"),
-                ]
-                text = ""
-                for c in candidates:
-                    tmp = " ".join(str(c or "").split()).strip()
-                    if tmp:
-                        text = tmp
-                        break
+                text = " ".join(str(info.get("content") or "").split()).strip()
                 if text:
                     comments.append(text)
                     if len(comments) >= limit:
@@ -711,17 +701,7 @@ def _extract_comment_details_pymupdf(data: bytes, limit: int = 400) -> list:
             annot = page.first_annot
             while annot:
                 info = annot.info or {}
-                candidates = [
-                    info.get("content"),
-                    info.get("subject"),
-                    info.get("title"),
-                ]
-                text = ""
-                for c in candidates:
-                    tmp = " ".join(str(c or "").split()).strip()
-                    if tmp:
-                        text = tmp
-                        break
+                text = " ".join(str(info.get("content") or "").split()).strip()
                 if text:
                     a_type = ""
                     try:

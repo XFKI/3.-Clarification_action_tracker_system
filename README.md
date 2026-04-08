@@ -31,7 +31,7 @@ It converts clarification and meeting records into actionable tasks, risk visibi
 | Risk Exposure | Overdue, high-priority, owner workload, due-soon |
 | Dashboard | KPI cards + Chart.js trend views |
 | Excel I/O | SheetJS import/export for engineering handover |
-| PDF Comments | Extract, review, and export PDF annotations |
+| PDF Comments | Extract only real text comments, then review and export |
 | Auditability | Change history + recycle/restore |
 
 ## Tech Stack

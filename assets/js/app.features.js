@@ -364,7 +364,9 @@ function docNormalizePdfCommentEntries(fileName,comments){
   const rows=[];
   (comments||[]).forEach((c,idx)=>{
     if(typeof c==='string'){
-      rows.push({id:uid(),fileName,commentIndex:idx+1,page:0,author:'',created:'',updated:'',annotationType:'',comment:c});
+      const text=String(c||'').trim();
+      if(!text)return;
+      rows.push({id:uid(),fileName,commentIndex:idx+1,page:0,author:'',created:'',updated:'',annotationType:'',comment:text});
       return;
     }
     if(!c||typeof c!=='object')return;
@@ -908,8 +910,12 @@ async function handlePdfCommentImportInput(e){
   for(const f of files){
     const comments=await docExtractPdfComments(f);
     const normalized=docNormalizePdfCommentEntries(f.name,comments);
-    if(!normalized.length)rows.push({id:uid(),fileName:f.name,commentIndex:0,page:0,author:'',created:'',updated:'',annotationType:'',comment:t('未提取到批注文本','No comment extracted')});
     rows.push(...normalized);
+  }
+  if(!rows.length){
+    toast(t('未提取到有效文本批注','No valid text comments extracted'),'info');
+    e.target.value='';
+    return;
   }
   docBoard.pdfComments=[...rows,...(docBoard.pdfComments||[])].slice(0,2000);
   docBoard.pdfSelected={};
