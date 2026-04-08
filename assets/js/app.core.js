@@ -35,7 +35,7 @@ let operatorName=localStorage.getItem('et_operator')||'ME';
 let sidebarCollapsed=localStorage.getItem('et_sidebar_collapsed')==='1';
 let uiTheme=localStorage.getItem('et_theme')||'light';
 let uiLang=localStorage.getItem('et_lang')||'zh';
-let state={currentTab:'dashboard',clarifications:[],actions:[],meetings:[],trash:[],selected:new Set(),sort:{field:null,dir:'asc'},filters:{search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false,duplicateOnly:false},editingId:null,meetingDateFilter:'',meetingSubjectFilter:'',actionReplyEditId:''};
+let state={currentTab:'overview',clarifications:[],actions:[],meetings:[],trash:[],selected:new Set(),sort:{field:null,dir:'asc'},boardFilters:{clarification:{search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false,duplicateOnly:false},meeting:{search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false},recycle:{search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false}},actionFilters:{search:'',status:'',discipline:'',actionBy:'',priority:'',sourceType:'',overdueOnly:false},editingId:null,meetingDateFilter:'',meetingSubjectFilter:'',actionReplyEditId:''};
 let docBoard={packages:[],activePackageId:'',search:'',statusFilter:'ALL'};
 let duplicateIdSet=new Set();
 let disciplineOptions=[...DISCIPLINES_DEFAULT];
@@ -141,7 +141,7 @@ function saveDocBoard(){
 function newClientId(){return`client_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`}
 
 function renderBackendRequiredScreen(){
-  document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e2e8f0;padding:24px;font-family:'Microsoft YaHei','Segoe UI',sans-serif"><div style="max-width:720px;border:1px solid #334155;border-radius:12px;padding:24px;background:#111827"><h2 style="margin:0 0 12px">${t('后端未启动，已阻断进入','Backend is required and not running')}</h2><p style="margin:0 0 10px;line-height:1.6">${t('本版本默认强制后端模式：意见和附件仅存储在项目目录数据库中。','This build uses forced backend mode by default: records and attachments are stored in project-folder DB.')}</p><p style="margin:0 0 10px;line-height:1.6">${t('请先运行 quick-start.bat（或 quick-start.sh），再刷新页面。','Run quick-start.bat (or quick-start.sh) first, then refresh this page.')}</p><p style="margin:0 0 16px;line-height:1.6">${t('若已部署到 Vercel 或 GitHub Pages，可在地址后追加 ?mode=web 进入网页本地模式。','If deployed on Vercel or GitHub Pages, append ?mode=web to URL to use web local mode.')}</p><button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer">${t('刷新重试','Retry')}</button></div></div>`;
+  document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e2e8f0;padding:24px;font-family:'Microsoft YaHei','Segoe UI',sans-serif"><div style="max-width:720px;border:1px solid #334155;border-radius:12px;padding:24px;background:#111827"><h2 style="margin:0 0 12px">${t('后端未启动，已阻断进入','Backend is required and not running')}</h2><p style="margin:0 0 10px;line-height:1.6">${t('本版本默认强制后端模式：意见和附件仅存储在项目目录数据库中。','This build uses forced backend mode by default: records and attachments are stored in project-folder DB.')}</p><p style="margin:0 0 10px;line-height:1.6">${t('请先运行 quick-start.bat，再刷新页面。','Run quick-start.bat first, then refresh this page.')}</p><p style="margin:0 0 16px;line-height:1.6">${t('若已部署到 Vercel 或 GitHub Pages，可在地址后追加 ?mode=web 进入网页本地模式。','If deployed on Vercel or GitHub Pages, append ?mode=web to URL to use web local mode.')}</p><button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;cursor:pointer">${t('刷新重试','Retry')}</button></div></div>`;
 }
 
 async function apiRequest(path,options){
@@ -162,10 +162,12 @@ function deepClone(obj){return JSON.parse(JSON.stringify(obj))}
 function safeJson(v){try{return JSON.stringify(v)}catch(e){return ''}}
 function valueEqual(a,b){return safeJson(a)===safeJson(b)}
 function collectSnapshot(){
+  const cl=(state.clarifications||[]).filter(i=>!i.__isDraft);
+  const mt=(state.meetings||[]).filter(i=>!i.__isDraft);
   return{
-    clarifications:deepClone(state.clarifications||[]),
+    clarifications:deepClone(cl),
     actions:deepClone(state.actions||[]),
-    meetings:deepClone(state.meetings||[]),
+    meetings:deepClone(mt),
     trash:deepClone(state.trash||[]),
     options:{
       disciplineOptions:deepClone(disciplineOptions||[]),
@@ -278,6 +280,7 @@ async function pullBackendState(projectId){
     sourceOptions=(s.options&&s.options.sourceOptions)||sourceOptions;
     columnWidthMap=(s.options&&s.options.columnWidthMap)||columnWidthMap;
     if(s.meta&&s.meta.operatorName)operatorName=s.meta.operatorName;
+    rebuildCategoryOptions();
     backendShadowSnapshot=collectSnapshot();
     save();
     backendSyncSuppress=false;
@@ -377,6 +380,7 @@ function registerBackendLifecycleHooks(){
   });
 }
 function save(){
+  renumberRecords();
   try{
     if(!backendMode){
       localStorage.setItem(projKey('cl'),JSON.stringify(state.clarifications));
@@ -421,6 +425,7 @@ function load(){
     columnWidthMap={};
   }
   migrateData();
+  renumberRecords();
   loadDocBoard();
   rebuildCategoryOptions();
   refreshDuplicateSet();
@@ -500,6 +505,16 @@ function rebuildCategoryOptions(){
   typeOptions=[...new Set([...(typeOptions||[]),...t])];
   actionByOptions=[...new Set([...(actionByOptions||[]),...ACTION_BY_DEFAULT])];
   sourceOptions=[...new Set([...(sourceOptions||[]),...SOURCES_DEFAULT])];
+}
+function getEffectiveDisciplineOptions(){
+  const s=new Set([...(disciplineOptions||[]),...DISCIPLINES_DEFAULT]);
+  [...(state.clarifications||[]),...(state.meetings||[])].forEach(i=>{if(i&&i.discipline)s.add(String(i.discipline))});
+  return [...s].filter(Boolean);
+}
+function getEffectiveActionByOptions(){
+  const s=new Set([...(actionByOptions||[]),...ACTION_BY_DEFAULT]);
+  [...(state.clarifications||[]),...(state.meetings||[]),...(state.actions||[])].forEach(i=>{if(i&&i.actionBy)s.add(String(i.actionBy))});
+  return [...s].filter(Boolean);
 }
 function addCategory(kind){
   const promptText=kind==='discipline'?t('输入新专业类别','New discipline'):
@@ -844,7 +859,7 @@ async function storageReport(){
 }
 function showQuickGuide(){
   const modal=document.getElementById('modal');
-  modal.innerHTML=`<div class="modal-content" style="max-width:900px"><div class="modal-header"><h2>${t('使用说明（快速版）','Quick Engineer Guide')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="guide-grid"><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.plus}</span><span class="guide-title">1. ${t('先录入源问题','Capture Source Items')}</span></div><div class="guide-text">${t('技术问题录入“技术澄清”，会议任务录入“会议纪要”。','Put technical issues into Clarifications and meeting tasks into Meetings.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.search}</span><span class="guide-title">2. ${t('行动项优先处理','Prioritize Actions')}</span></div><div class="guide-text">${t('每日按“逾期 -> 高优先级 -> 即将到期”处理，确保关键问题先闭环。','Process in order: Overdue -> High priority -> Due soon.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.check}</span><span class="guide-title">3. ${t('状态统一闭环','Close with Standard Status')}</span></div><div class="guide-text">${t('统一使用 OPEN / IN_PROGRESS / CLOSED；关闭后会自动回写源记录。','Use OPEN / IN_PROGRESS / CLOSED. Closing writes back to source records.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.download}</span><span class="guide-title">4. ${t('备份与交付','Backup and Handover')}</span></div><div class="guide-text">${t('启用定时备份并在对外沟通前导出 Excel；清空操作前先备份。','Enable scheduled backup and export Excel before handover; backup before any clear action.')}</div></div></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
+  modal.innerHTML=`<div class="modal-content" style="max-width:900px"><div class="modal-header"><h2>${t('使用说明（快速版）','Quick Engineer Guide')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="guide-grid"><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.search}</span><span class="guide-title">1. ${t('先看总看板，再进项目','Start from Overview')}</span></div><div class="guide-text">${t('General 仅保留“总看板”，先看全项目风险，再切换项目处理。','General only contains Overview. Review cross-project risks first, then work inside a project.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.plus}</span><span class="guide-title">2. ${t('新增后必须点保存','Save to Keep New Rows')}</span></div><div class="guide-text">${t('新增行是临时草稿，只有点击“保存”才会持久化；切换看板会自动丢弃未保存草稿。','New rows are drafts. They are persisted only after Save; switching views discards unsaved drafts.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.check}</span><span class="guide-title">3. ${t('筛选口径一致且互不干扰','Independent Filters by Board')}</span></div><div class="guide-text">${t('澄清/会议/行动项都支持状态、责任方、专业等筛选；每个看板筛选独立缓存。','Clarification/Meeting/Action boards all support status, owner, discipline filters with isolated states.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.save}</span><span class="guide-title">4. ${t('自动备份先选路径并设上限','Backup with Guardrails')}</span></div><div class="guide-text">${t('启用定时备份前必须手动选择备份位置，并设置每日写入上限，防止后台持续写入。','Scheduled backup requires manual destination selection and a daily write cap to prevent continuous background writes.')}</div></div></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
   modal.classList.add('open');
 }
 function getFieldAttachments(item,fieldKey){
@@ -1062,24 +1077,121 @@ function getAllOpenItems(){
   ];
 }
 
+function getProjectDocBoardSnapshot(projectId){
+  try{
+    const raw=JSON.parse(localStorage.getItem(`et_${projectId}_doc_board`)||'null');
+    return normalizeDocBoard(raw);
+  }catch(e){
+    return createEmptyDocBoard();
+  }
+}
+
+function dropDraftRows(){
+  const beforeCl=state.clarifications.length;
+  const beforeMt=state.meetings.length;
+  state.clarifications=state.clarifications.filter(i=>!i.__isDraft);
+  state.meetings=state.meetings.filter(i=>!i.__isDraft);
+  if(beforeCl!==state.clarifications.length||beforeMt!==state.meetings.length){
+    renumberRecords();
+    state.editingId=null;
+  }
+}
+
+function parseSerialNumber(v){
+  const s=String(v||'').trim();
+  if(!/^\d+$/.test(s))return NaN;
+  return parseInt(s,10);
+}
+function getNextSerialNumber(list,field){
+  let maxNo=0;
+  (list||[]).forEach(item=>{
+    const n=parseSerialNumber(item&&item[field]);
+    if(Number.isFinite(n)&&n>maxNo)maxNo=n;
+  });
+  return maxNo+1;
+}
+function compareBySerialDesc(a,b,field){
+  const na=parseSerialNumber(a&&a[field]);
+  const nb=parseSerialNumber(b&&b[field]);
+  const aNum=Number.isFinite(na);
+  const bNum=Number.isFinite(nb);
+  if(aNum&&bNum&&na!==nb)return nb-na;
+  if(aNum&&!bNum)return-1;
+  if(!aNum&&bNum)return 1;
+  const sa=String((a&&a[field])||'');
+  const sb=String((b&&b[field])||'');
+  return sb.localeCompare(sa,undefined,{numeric:true,sensitivity:'base'});
+}
+
 // ===== SIDEBAR =====
 function renderSidebar(){
   const sb=document.getElementById('sidebar');
   sb.innerHTML=`
   <div class="sb-logo"><div class="sb-logo-mark">ET</div><div class="sb-logo-text">Eng Tracker<small>${t('设备采购追踪系统','Equipment Tracking')}</small></div><button id="sidebarToggleBtn" class="sb-toggle-btn" onclick="toggleSidebar()" title="${t('隐藏目录','Collapse Sidebar')}">◀</button></div>
   <div class="sb-section">
+    <div class="sb-section-title">${t('General','General')}</div>
+    <ul class="sb-proj-list">
+      <li class="sb-proj-item${state.currentTab==='overview'?' active':''}" onclick="switchTab('overview')"><span>${t('总看板','Overview')}</span></li>
+    </ul>
+  </div>
+  <div class="sb-section">
     <div class="sb-section-title">${t('项目目录','Projects')}</div>
-    <ul class="sb-proj-list">${projects.map(p=>`<li class="sb-proj-item${p.id===activeProjectId?' active':''}" onclick="switchProject('${p.id}')"><span>${escHtml(p.name)}</span><span class="proj-tools"><button class="proj-del" onclick="event.stopPropagation();renameProject('${p.id}')" title="重命名">✎</button>${projects.length>1?`<button class="proj-del" onclick="event.stopPropagation();deleteProject('${p.id}')" title="删除">✕</button>`:''}</span></li>`).join('')}</ul>
+    <ul class="sb-proj-list">${projects.map(p=>{
+      const pBoard=getProjectDocBoardSnapshot(p.id);
+      const pPkgs=(pBoard.packages||[]);
+      const showPkgRows=p.id===activeProjectId;
+      const pkgRows=!showPkgRows?'':(pPkgs.length
+        ? pPkgs.map(pk=>`<li class="sb-proj-item${p.id===activeProjectId&&docBoard.activePackageId===pk.id?' active':''}" onclick="switchPackageFromProject('${p.id}','${pk.id}')"><span style="padding-left:14px">• ${escHtml(pk.name)}</span><span class="proj-tools"><button class="proj-del" onclick="event.stopPropagation();renamePackageForProject('${p.id}','${pk.id}')" title="重命名设备包">✎</button><button class="proj-del" onclick="event.stopPropagation();deletePackageFromProject('${p.id}','${pk.id}')" title="删除设备包">✕</button></span></li>`).join('')
+        : `<li class="sb-proj-item"><span style="padding-left:14px;color:var(--text-muted)">${t('暂无设备包','No packages')}</span></li>`);
+      return `<li class="sb-proj-item${p.id===activeProjectId?' active':''}" onclick="switchProject('${p.id}')"><span>${escHtml(p.name)}</span><span class="proj-tools"><button class="proj-del" onclick="event.stopPropagation();renameProject('${p.id}')" title="重命名">✎</button><button class="proj-del" onclick="event.stopPropagation();addPackageForProject('${p.id}')" title="新增设备包">＋</button>${projects.length>1?`<button class="proj-del" onclick="event.stopPropagation();deleteProject('${p.id}')" title="删除">✕</button>`:''}</span></li>${pkgRows}`;
+    }).join('')}</ul>
     <div class="sb-add-proj"><input id="newProjInput" placeholder="${t('新增项目名...','New project name...')}" onkeydown="if(event.key==='Enter')addProject()"><button onclick="addProject()">${t('添加','Add')}</button></div>
   </div>`;
   updateSidebarToggleButtons();
 }
-function switchDocPackageFromSidebar(packageId){
+async function switchPackageFromProject(projectId,packageId){
+  if(activeProjectId!==projectId){
+    await switchProject(projectId);
+  }
   docBoard.activePackageId=packageId;
   saveDocBoard();
-  switchTab('dashboard');
+  renderAll();
+}
+async function addPackageForProject(projectId){
+  if(activeProjectId!==projectId){
+    await switchProject(projectId);
+  }
+  if(typeof docCreatePackage==='function')docCreatePackage();
+}
+async function renamePackageForProject(projectId,packageId){
+  if(activeProjectId!==projectId){
+    await switchProject(projectId);
+  }
+  const pkg=(docBoard.packages||[]).find(p=>p.id===packageId);
+  if(!pkg)return;
+  const name=(prompt(t('修改设备包名称','Rename package'),pkg.name||'')||'').trim();
+  if(!name)return;
+  pkg.name=name;
+  pkg.updatedAt=nowIso();
+  saveDocBoard();
+  renderAll();
+}
+async function deletePackageFromProject(projectId,packageId){
+  if(activeProjectId!==projectId){
+    await switchProject(projectId);
+  }
+  const pkg=(docBoard.packages||[]).find(p=>p.id===packageId);
+  if(!pkg)return;
+  if(!confirm(t(`确认删除设备包 ${pkg.name}？`,`Delete package ${pkg.name}?`)))return;
+  docBoard.packages=(docBoard.packages||[]).filter(p=>p.id!==packageId);
+  if(docBoard.activePackageId===packageId){
+    docBoard.activePackageId=docBoard.packages[0]?docBoard.packages[0].id:'';
+  }
+  saveDocBoard();
+  renderAll();
 }
 async function switchProject(id){
+  dropDraftRows();
   activeProjectId=id;
   saveProjects();
   load();
@@ -1088,7 +1200,15 @@ async function switchProject(id){
   state.selected.clear();state.editingId=null;state.meetingDateFilter='';state.meetingSubjectFilter='';state.actionReplyEditId='';
   renderAll();
 }
-function addProject(){const inp=document.getElementById('newProjInput');const n=inp.value.trim();if(!n){toast(t('请输入项目名','Please input project name'),'error');return}projects.push({id:uid(),name:n});saveProjects();inp.value='';renderSidebar()}
+function addProject(){
+  const inp=document.getElementById('newProjInput');
+  const n=inp.value.trim();
+  if(!n){toast(t('请输入项目名','Please input project name'),'error');return}
+  projects.push({id:uid(),name:n});
+  saveProjects();
+  inp.value='';
+  renderAll();
+}
 function renameProject(id){
   const p=projects.find(x=>x.id===id);if(!p)return;
   const n=(prompt(t('修改项目名称','Rename project'),p.name)||'').trim();
@@ -1122,15 +1242,14 @@ function renderHeader(){
     <input id="operatorInput" value="${escHtml(operatorName)}" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-deep);color:var(--text-primary);font-size:.75rem;width:110px" placeholder="操作人" onchange="setOperator(this.value)">
     <button class="hdr-btn" onclick="toggleLanguage()">${uiLang==='zh'?'EN':'中文'}</button>
     <button class="hdr-btn hdr-icon-btn" onclick="toggleTheme()" title="${uiTheme==='dark'?t('切换浅色主题','Switch to light mode'):t('切换夜班主题','Switch to night mode')}">${uiTheme==='dark'?IC.sun:IC.moon}</button>
-    <button class="hdr-btn" onclick="storageReport()">${t('存储','Storage')}</button>
     <button class="hdr-btn" onclick="showQuickGuide()">${IC.help} ${t('使用说明','Guide')}</button>
     <button class="hdr-btn" onclick="importSampleData()">${IC.db} ${t('示例数据','Sample')}</button>
-    <button class="hdr-btn" onclick="clearCurrentProjectData()">${IC.trash} ${t('清空当前项目','Clear Project')}</button>
-    <button class="hdr-btn" onclick="clearAllCachedData()">${IC.trash} ${t('一键清空','Clear All')}</button>
+    <button class="hdr-btn" onclick="storageReport()">${IC.db} ${t('存储分析','Storage')}</button>
     <button class="hdr-btn" onclick="openAutoBackupDialog()">${IC.save} ${t('自动备份设置','Auto Backup')}</button>
     <button class="hdr-btn hdr-btn-backup" onclick="runManualBackupNow()">${IC.download} ${t('立即备份','Backup Now')}</button>
     <button class="hdr-btn" onclick="document.getElementById('xlsxFileInput').click()">${IC.upload} ${t('导入Excel','Import Excel')}</button>
     <button class="hdr-btn" onclick="exportXlsx()">${IC.download} ${t('导出Excel','Export Excel')}</button>
+    <button class="hdr-btn" onclick="clearCurrentProjectData()">${IC.empty} ${t('一键清空项目','Clear Project')}</button>
   </div>`;
 }
 function closeFirstUseIntro(markSeen){
@@ -1149,6 +1268,9 @@ function showFirstUseIntro(){
 }
 function maybeShowFirstUseIntro(){
   if(localStorage.getItem(FIRST_USE_INTRO_KEY)==='1')return;
+  const hasBusinessData=(state.clarifications.length+state.meetings.length)>0;
+  if(hasBusinessData)return;
+  if(state.currentTab!=='overview')return;
   setTimeout(()=>showFirstUseIntro(),320);
 }
 function setOperator(v){operatorName=(v||'ME').trim()||'ME';localStorage.setItem('et_operator',operatorName);toast(t(`操作人已设为 ${operatorName}`,`Operator set to ${operatorName}`),'info')}
@@ -1244,6 +1366,7 @@ function renderNav(){
   const openAll=getAllOpenItems().length;
   const commentCount=(docBoard.pdfComments||[]).length;
   const tabs=[
+    {id:'overview',label:t('总看板','Overview')},
     {id:'dashboard',label:t('仪表盘','Dashboard')},
     {id:'action',label:t('行动项','Actions'),count:openAll,warn:true},
     {id:'clarification',label:t('技术澄清','Clarifications'),count:state.clarifications.length},
@@ -1256,7 +1379,18 @@ function renderNav(){
     return`<div class="nav-tab${state.currentTab===t.id?' active':''}" onclick="switchTab('${t.id}')">${t.label}${t.count!=null?`<span class="${badgeCls}">${t.count}</span>`:''}</div>`;
   }).join('');
 }
-function switchTab(id){if(id==='docboard')id='dashboard';state.currentTab=id;state.selected.clear();state.editingId=null;if(id!=='clarification')state.filters.duplicateOnly=false;document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id+'View').classList.add('active');renderNav();renderCurrentView()}
+function switchTab(id){
+  if(id==='docboard')id='overview';
+  dropDraftRows();
+  state.currentTab=id;
+  state.selected.clear();
+  state.editingId=null;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const view=document.getElementById(id+'View');
+  if(view)view.classList.add('active');
+  renderNav();
+  renderCurrentView();
+}
 
 // ===== DASHBOARD =====
 function renderDashboard(){
@@ -1304,7 +1438,13 @@ function renderDashboard(){
     ${comboRisk.length?comboRisk.map(r=>`<tr><td>${escHtml(r.owner)}</td><td style="color:var(--red);font-weight:700">${r.count}</td><td><button class="btn btn-danger" style="padding:2px 8px;font-size:.68rem" onclick="applyRiskPreset('${escJs(r.owner)}')">${t('查看明细','Open Details')}</button></td></tr>`).join(''):`<tr><td colspan="3" class="no-data">${t('暂无组合风险项','No combo risk items')}</td></tr>`}
     </tbody></table></div></div>`;
   if(total===0){
-    dash.innerHTML+=`<div class="chart-box"><h3>${t('暂无业务数据','No Business Data')}</h3><div class="no-data" style="padding:24px 12px">${t('当前项目没有澄清/会议记录，建议点击“示例数据”或导入Excel快速开始。','No records in this project. Click Sample or Import Excel to start quickly.')}</div></div>`;
+    dash.innerHTML+=`<div class="chart-box"><h3>${t('暂无业务数据','No Business Data')}</h3><div class="no-data" style="padding:24px 12px">${t('当前项目没有澄清/会议记录，建议先导入历史数据或加载示例。','No records in this project. Import historical data or load sample first.')}
+      <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="importSampleData()">${t('加载示例数据','Load Sample')}</button>
+        <button class="btn btn-outline" onclick="document.getElementById('xlsxFileInput').click()">${t('导入Excel','Import Excel')}</button>
+        <button class="btn btn-outline" onclick="showQuickGuide()">${t('打开使用说明','Open Guide')}</button>
+      </div>
+    </div></div>`;
   }
   dashboardCharts.forEach(c=>{try{c.destroy()}catch(e){}});
   dashboardCharts=[];
@@ -1405,27 +1545,73 @@ function buildComboRiskRows(){
   return Object.keys(map).map(owner=>({owner,count:map[owner]})).sort((a,b)=>b.count-a.count||a.owner.localeCompare(b.owner));
 }
 function applyRiskPreset(owner){
-  state.filters.search='';
-  state.filters.status='';
-  state.filters.actionBy=owner||'';
-  state.filters.priority='High';
-  state.filters.overdueOnly=true;
+  state.actionFilters.search='';
+  state.actionFilters.status='';
+  state.actionFilters.actionBy=owner||'';
+  state.actionFilters.priority='High';
+  state.actionFilters.overdueOnly=true;
   switchTab('action');
 }
 function applyOwnerWeekPreset(owner,week){
-  state.filters.search=week||'';
-  state.filters.status='';
-  state.filters.actionBy=owner||'';
-  state.filters.priority='';
-  state.filters.overdueOnly=false;
+  state.actionFilters.search=week||'';
+  state.actionFilters.status='';
+  state.actionFilters.actionBy=owner||'';
+  state.actionFilters.priority='';
+  state.actionFilters.overdueOnly=false;
   switchTab('action');
 }
 
 function columnWidthKey(tableId,colIdx){return`${tableId}:${colIdx}`}
 
+function renumberRecords(){
+  state.clarifications=[...(state.clarifications||[])].sort((a,b)=>compareBySerialDesc(a,b,'actionId'));
+  state.meetings=[...(state.meetings||[])].sort((a,b)=>compareBySerialDesc(a,b,'no'));
+}
+
+function applyActionFilters(data){
+  let rows=[...(data||[])];
+  const f=state.actionFilters||{};
+  if(f.search){
+    const q=String(f.search).toLowerCase();
+    rows=rows.filter(i=>JSON.stringify(i).toLowerCase().includes(q));
+  }
+  if(f.status)rows=rows.filter(i=>normalizeStatus(i.status)===normalizeStatus(f.status));
+  if(f.discipline)rows=rows.filter(i=>String(i.discipline||'')===f.discipline);
+  if(f.actionBy)rows=rows.filter(i=>String(i.actionBy||'')===f.actionBy);
+  if(f.priority)rows=rows.filter(i=>String(i.priority||'')===f.priority);
+  if(f.sourceType)rows=rows.filter(i=>String(i._sourceType||'')===f.sourceType);
+  if(f.overdueOnly)rows=rows.filter(isOverdue);
+  return rows;
+}
+function setActionSearch(value){
+  state.actionFilters.search=value||'';
+  renderActions();
+}
+function setActionFilter(key,value){
+  state.actionFilters=state.actionFilters||{};
+  state.actionFilters[key]=value||'';
+  renderActions();
+}
+function toggleActionOverdue(){
+  state.actionFilters=state.actionFilters||{};
+  state.actionFilters.overdueOnly=!state.actionFilters.overdueOnly;
+  renderActions();
+}
+function resetActionFilters(){
+  state.actionFilters={search:'',status:'',discipline:'',actionBy:'',priority:'',sourceType:'',overdueOnly:false};
+  renderActions();
+}
+
 // ===== FILTER/SORT =====
-function applyFilters(data){
-  let r=data;const f=state.filters;
+function getBoardFilter(type){
+  if(!state.boardFilters||!state.boardFilters[type]){
+    state.boardFilters=state.boardFilters||{};
+    state.boardFilters[type]={search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false,duplicateOnly:false};
+  }
+  return state.boardFilters[type];
+}
+function applyFilters(data,type){
+  let r=data;const f=getBoardFilter(type);
   if(f.search){const q=f.search.toLowerCase();r=r.filter(i=>JSON.stringify(i).toLowerCase().includes(q))}
   if(f.status)r=r.filter(i=>normalizeStatus(i.status)===normalizeStatus(f.status));
   if(f.discipline)r=r.filter(i=>(i.discipline||'')===f.discipline);
@@ -1441,6 +1627,13 @@ function sortData(data){
   return[...data].sort((a,b)=>{
     let va=f==='dueWeek'?isoWeek(getDueDate(a)):(a[f]||'');
     let vb=f==='dueWeek'?isoWeek(getDueDate(b)):(b[f]||'');
+    if(f==='actionId'||f==='no'){
+      const na=parseSerialNumber(va);
+      const nb=parseSerialNumber(vb);
+      if(Number.isFinite(na)&&Number.isFinite(nb)&&na!==nb)return(na-nb)*dir;
+      if(Number.isFinite(na)&&!Number.isFinite(nb))return-dir;
+      if(!Number.isFinite(na)&&Number.isFinite(nb))return dir;
+    }
     if(f==='meetingDate'){va=a.meetingDate||'';vb=b.meetingDate||''}
     if(f==='status'){va=normalizeStatus(va);vb=normalizeStatus(vb)}
     if(typeof va==='string')va=va.toLowerCase();if(typeof vb==='string')vb=vb.toLowerCase();
@@ -1500,38 +1693,70 @@ function resetTableColumnWidths(tableId){
 
 // ===== TOOLBAR =====
 function renderToolbar(type,opts){
+  const disciplineList=getEffectiveDisciplineOptions();
+  const actionByList=getEffectiveActionByOptions();
+  const f=getBoardFilter(type);
   const sOpts=opts.statuses||STATUS_STD;const showD=opts.showDiscipline!==false;const showP=opts.showPriority||false;
   const subjectBox=opts.subjectSearch?`<div class="search-box search-box-subject">${IC.search}<input type="text" placeholder="${t('按会议主题筛选...','Filter by subject...')}" value="${escHtml(state.meetingSubjectFilter)}" oninput="handleMeetingSubjectInput(this.value)"></div>`:'';
+  const clearBtn=(type==='clarification'||type==='meeting')?`<button class="btn btn-danger" onclick="clearBoardData('${type}')">${IC.empty} ${t('清空本看板','Clear Board')}</button>`:'';
+  const resetBtn=`<button class="btn btn-outline" onclick="resetBoardFilters('${type}')">${t('重置筛选','Reset')}</button>`;
   return`<div class="toolbar">
-    <div class="search-box">${IC.search}<input type="text" placeholder="${t('搜索...','Search...')}" value="${escHtml(state.filters.search)}" oninput="handleSearchInput(this.value,'${type}')"></div>
+    <div class="search-box">${IC.search}<input type="text" placeholder="${t('搜索...','Search...')}" value="${escHtml(f.search)}" oninput="setBoardFilter('${type}','search',this.value)"></div>
     ${subjectBox}
-    <select class="filter-select" onchange="state.filters.status=this.value;renderCurrentView()"><option value="">${t('全部状态','All Status')}</option>${sOpts.map(s=>`<option value="${s}"${state.filters.status===s?' selected':''}>${s}</option>`).join('')}</select>
-    ${showD?`<select class="filter-select" onchange="state.filters.discipline=this.value;renderCurrentView()"><option value="">${t('全部专业','All Discipline')}</option>${disciplineOptions.map(d=>`<option value="${d}"${state.filters.discipline===d?' selected':''}>${d}</option>`).join('')}</select>`:''}
-    ${showP?`<select class="filter-select" onchange="state.filters.priority=this.value;renderCurrentView()"><option value="">${t('优先级全部','All Priority')}</option>${PRIORITIES.map(p=>`<option value="${p}"${state.filters.priority===p?' selected':''}>${p}</option>`).join('')}</select>`:''}
-    <select class="filter-select" onchange="state.filters.actionBy=this.value;renderCurrentView()"><option value="">${t('责任方全部','All Action By')}</option>${actionByOptions.map(a=>`<option value="${a}"${state.filters.actionBy===a?' selected':''}>${a}</option>`).join('')}</select>
-    <button class="btn ${state.filters.overdueOnly?'btn-danger':'btn-outline'}" onclick="state.filters.overdueOnly=!state.filters.overdueOnly;renderCurrentView()">${t('逾期项','Overdue')}</button>
-    ${type==='clarification'?`<button class="btn ${state.filters.duplicateOnly?'btn-danger':'btn-outline'}" onclick="state.filters.duplicateOnly=!state.filters.duplicateOnly;renderCurrentView()">${t('疑似重复','Possible Duplicate')}</button>`:''}
+    <select class="filter-select" onchange="setBoardFilter('${type}','status',this.value)"><option value="">${t('全部状态','All Status')}</option>${sOpts.map(s=>`<option value="${s}"${f.status===s?' selected':''}>${s}</option>`).join('')}</select>
+    ${showD?`<select class="filter-select" onchange="setBoardFilter('${type}','discipline',this.value)"><option value="">${t('全部专业','All Discipline')}</option>${disciplineList.map(d=>`<option value="${d}"${f.discipline===d?' selected':''}>${d}</option>`).join('')}</select>`:''}
+    ${showP?`<select class="filter-select" onchange="setBoardFilter('${type}','priority',this.value)"><option value="">${t('优先级全部','All Priority')}</option>${PRIORITIES.map(p=>`<option value="${p}"${f.priority===p?' selected':''}>${p}</option>`).join('')}</select>`:''}
+    <select class="filter-select" onchange="setBoardFilter('${type}','actionBy',this.value)"><option value="">${t('责任方全部','All Action By')}</option>${actionByList.map(a=>`<option value="${a}"${f.actionBy===a?' selected':''}>${a}</option>`).join('')}</select>
+    <button class="btn ${f.overdueOnly?'btn-danger':'btn-outline'}" onclick="toggleBoardOverdue('${type}')">${t('逾期项','Overdue')}</button>
+    ${type==='clarification'?`<button class="btn ${f.duplicateOnly?'btn-danger':'btn-outline'}" onclick="toggleBoardDuplicate('${type}')">${t('疑似重复','Possible Duplicate')}</button>`:''}
+    ${resetBtn}
     <button class="btn btn-primary" onclick="addNewRow('${type}')">${IC.plus} ${t('新增','New')}</button>
+    ${clearBtn}
   </div>`;
 }
+function setBoardFilter(type,key,value){
+  const f=getBoardFilter(type);
+  f[key]=value||'';
+  renderCurrentView();
+}
+function toggleBoardOverdue(type){
+  const f=getBoardFilter(type);
+  f.overdueOnly=!f.overdueOnly;
+  renderCurrentView();
+}
+function toggleBoardDuplicate(type){
+  const f=getBoardFilter(type);
+  if(type!=='clarification')return;
+  f.duplicateOnly=!f.duplicateOnly;
+  renderCurrentView();
+}
+function resetBoardFilters(type){
+  if(type==='clarification')state.boardFilters.clarification={search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false,duplicateOnly:false};
+  else if(type==='meeting')state.boardFilters.meeting={search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false};
+  else state.boardFilters.recycle={search:'',status:'',discipline:'',priority:'',actionBy:'',overdueOnly:false};
+  if(type==='meeting')state.meetingSubjectFilter='';
+  renderCurrentView();
+}
 function handleSearchInput(value,type){
-  state.filters.search=value;
-  const tableId=type==='clarification'?'clarificationTable':type==='meeting'?'meetingTable':type==='action'?'actionTable':'recycleTable';
-  const table=document.getElementById(tableId);
-  if(!table){renderCurrentView();return}
-  table.querySelectorAll('tbody tr').forEach(tr=>{
-    if(tr.classList.contains('no-data-row'))return;
-    tr.style.display=tr.textContent.toLowerCase().includes(String(value||'').toLowerCase())?'':'none';
-  });
+  setBoardFilter(type,'search',value);
 }
 function handleMeetingSubjectInput(value){
   state.meetingSubjectFilter=value;
-  const table=document.getElementById('meetingTable');
-  if(!table)return;
-  table.querySelectorAll('tbody tr').forEach(tr=>{
-    if(tr.classList.contains('no-data-row'))return;
-    tr.style.display=tr.textContent.toLowerCase().includes(String(value||'').toLowerCase())?'':'none';
-  });
+  renderCurrentView();
+}
+
+function clearBoardData(type){
+  if(type!=='clarification'&&type!=='meeting')return;
+  const arr=type==='clarification'?state.clarifications:state.meetings;
+  if(!arr.length){toast(t('当前看板无数据可清空','No data to clear in this board'),'info');return}
+  if(!confirm(t('确认清空当前看板数据并移入回收站？','Clear current board data and move to recycle?')))return;
+  const ids=arr.map(i=>i.id);
+  ids.forEach(id=>moveToTrash(type,id,true));
+  refreshDuplicateSet();
+  save();
+  renderNav();
+  renderCurrentView();
+  toast(t('当前看板已清空并移入回收站','Board cleared and moved to recycle'));
 }
 
 // ===== BATCH =====
@@ -1690,7 +1915,18 @@ function quickSetStatus(type,id,nextStatus){
 
 // ===== INLINE EDIT =====
 function startEdit(type,id){state.editingId=id;renderCurrentView()}
-function cancelEdit(){state.editingId=null;renderCurrentView()}
+function cancelEdit(){
+  const list=state.currentTab==='clarification'?state.clarifications:state.currentTab==='meeting'?state.meetings:null;
+  if(list&&state.editingId){
+    const idx=list.findIndex(x=>x.id===state.editingId&&x.__isDraft);
+    if(idx>=0)list.splice(idx,1);
+    renumberRecords();
+  }
+  state.editingId=null;
+  save();
+  renderNav();
+  renderCurrentView();
+}
 function saveEdit(type,id){
   const arr=type==='clarification'?state.clarifications:type==='action'?state.actions:state.meetings;
   const item=arr.find(i=>i.id===id);if(!item)return;
@@ -1713,16 +1949,19 @@ function saveEdit(type,id){
   if(prev.status!==item.status)updateMeta(item,{type:'STATUS_CHANGE',field:'status',from:statusLabel(prev.status),to:statusLabel(item.status)});
   if((prev.reply||'')!==(item.reply||''))updateMeta(item,{type:'REPLY_CHANGE',field:'reply',from:'(edited)',to:'(edited)'});
   updateMeta(item,{type:'EDIT'});
+  delete item.__isDraft;
   refreshDuplicateSet();
+  renumberRecords();
   state.editingId=null;save();renderNav();renderCurrentView();toast(t('已保存','Saved'));
 }
 function addNewRow(type){
   const obj={id:uid()};
-  if(type==='clarification'){obj.actionId=''+(state.clarifications.length+1);obj.priority='Medium';obj.discipline='';obj.type='';obj.clarification='';obj.reply='';obj.actionBy=actionByOptions[0]||'WISON';obj.openDate=fmtDate(new Date());obj.currentDueDate='';obj.status='OPEN';obj.createdAt=nowIso();obj.updatedAt=obj.createdAt;obj.updatedBy=operatorName;obj.history=[{at:obj.createdAt,by:operatorName,type:'CREATE',field:'',from:'',to:''}];state.clarifications.unshift(obj)}
+  if(type==='clarification'){obj.actionId=String(getNextSerialNumber(state.clarifications,'actionId'));obj.priority='Medium';obj.discipline='';obj.type='';obj.clarification='';obj.reply='';obj.actionBy=actionByOptions[0]||'WISON';obj.openDate=fmtDate(new Date());obj.currentDueDate='';obj.status='OPEN';obj.createdAt=nowIso();obj.updatedAt=obj.createdAt;obj.updatedBy=operatorName;obj.history=[{at:obj.createdAt,by:operatorName,type:'CREATE',field:'',from:'',to:''}];obj.__isDraft=true;state.clarifications.unshift(obj)}
   else if(type==='action'){obj.no=''+(state.actions.length+1);obj.status='OPEN';obj.action='';obj.project='';obj.dateIdentified=fmtDate(new Date());obj.needDate='';obj.actionBy=actionByOptions[0]||'WISON';obj.remarks='';state.actions.unshift(obj)}
-  else{obj.no=''+(state.meetings.length+1);obj.subject='';obj.priority='Medium';obj.discipline='';obj.clarification='';obj.reply='';obj.actionBy=actionByOptions[0]||'WISON';obj.meetingDate=fmtDate(new Date());obj.plannedDate=fmtDate(new Date());obj.status='OPEN';obj.createdAt=nowIso();obj.updatedAt=obj.createdAt;obj.updatedBy=operatorName;obj.history=[{at:obj.createdAt,by:operatorName,type:'CREATE',field:'',from:'',to:''}];state.meetings.unshift(obj)}
+  else{obj.no=String(getNextSerialNumber(state.meetings,'no'));obj.subject='';obj.priority='Medium';obj.discipline='';obj.clarification='';obj.reply='';obj.actionBy=actionByOptions[0]||'WISON';obj.meetingDate=fmtDate(new Date());obj.plannedDate=fmtDate(new Date());obj.status='OPEN';obj.createdAt=nowIso();obj.updatedAt=obj.createdAt;obj.updatedBy=operatorName;obj.history=[{at:obj.createdAt,by:operatorName,type:'CREATE',field:'',from:'',to:''}];obj.__isDraft=true;state.meetings.unshift(obj)}
   if(type==='clarification'){obj.source=sourceOptions[0]||'Email'}
-  state.editingId=obj.id;save();renderNav();renderCurrentView();
+  renumberRecords();
+  state.editingId=obj.id;renderNav();renderCurrentView();
 }
 function deleteItem(type,id){moveToTrash(type,id)}
 
@@ -1798,7 +2037,7 @@ function registerGlobalHotkeys(){
   document.addEventListener('keydown',e=>{
     const key=(e.key||'').toLowerCase();
     if(e.altKey&&!e.ctrlKey&&!e.shiftKey){
-      const map={1:'dashboard',2:'action',3:'clarification',4:'meeting',5:'pdfcomments',6:'recycle'};
+      const map={1:'overview',2:'dashboard',3:'action',4:'clarification',5:'meeting',6:'pdfcomments',7:'recycle'};
       if(map[key]){e.preventDefault();switchTab(map[key]);return}
     }
     if(e.ctrlKey&&key==='n'){
@@ -1807,6 +2046,13 @@ function registerGlobalHotkeys(){
     }
     if(e.ctrlKey&&key==='s'){
       if(state.editingId&&(state.currentTab==='clarification'||state.currentTab==='meeting')){e.preventDefault();saveEdit(state.currentTab,state.editingId)}
+      return;
+    }
+    if(key==='escape'){
+      if(state.editingId&&(state.currentTab==='clarification'||state.currentTab==='meeting')){
+        e.preventDefault();
+        cancelEdit();
+      }
       return;
     }
     if(e.ctrlKey&&e.shiftKey&&key==='x'){

@@ -1,6 +1,6 @@
 // ===== CLARIFICATION VIEW =====
 function renderClarifications(){
-  const filtered=sortData(applyFilters(state.clarifications));const ids=filtered.map(i=>i.id);
+  const filtered=sortData(applyFilters(state.clarifications,'clarification'));const ids=filtered.map(i=>i.id);
   const v=document.getElementById('clarificationView');
   const thActions=t('操作','Actions');
   const thClar=t('澄清内容','Clarification');
@@ -16,7 +16,7 @@ function renderClarifications(){
   ${filtered.length?filtered.map(i=>{const ed=state.editingId===i.id;const pri=String(i.priority||'').toLowerCase();return`<tr data-id="${i.id}" class="${isOverdue(i)?'overdue':''} ${duplicateIdSet.has(i.id)?' duplicate':''} ${ed?'edit-row':''} priority-row-${pri}">
     <td class="action-col">${actionBtns('clarification',i,ed)}</td>
     <td><input type="checkbox" class="cb" ${state.selected.has(i.id)?'checked':''} onchange="toggleSelect('${i.id}')"></td>
-    <td class="cell-id">${inInput(i,'actionId',ed,40)}</td>
+    <td class="cell-id">${escHtml(i.actionId||'')}</td>
     <td>${ed?inSelect(i,'priority',PRIORITIES,true):`<span class="cell-priority priority-${(i.priority||'').toLowerCase()}">${escHtml(i.priority||'—')}</span>`}</td>
     <td>${ed?inManagedSelect(i,'discipline',[''].concat(disciplineOptions),true,'discipline','clarification'):`<span class="cell-discipline">${escHtml(i.discipline||'—')}</span>`}</td>
     <td>${ed?inManagedSelect(i,'type',[''].concat(typeOptions),true,'type','clarification'):escHtml(i.type||'—')}</td>
@@ -33,12 +33,23 @@ function renderClarifications(){
 
 // ===== ACTION VIEW (aggregates open items from CL + MT) =====
 function renderActions(){
-  const openItems=sortData(applyFilters(getAllOpenItems()));
+  const disciplineList=getEffectiveDisciplineOptions();
+  const actionByList=getEffectiveActionByOptions();
+  const openItems=sortData(applyActionFilters(getAllOpenItems()));
   const v=document.getElementById('actionView');
   const thActions=t('操作','Actions');
   const thContent=t('内容','Content');
   const thReply=t('回复','Reply');
-  v.innerHTML=`<div class="toolbar"><div class="search-box">${IC.search}<input type="text" placeholder="${t('搜索...','Search...')}" value="${escHtml(state.filters.search)}" oninput="handleSearchInput(this.value,'action')"></div></div>
+  v.innerHTML=`<div class="toolbar">
+    <div class="search-box">${IC.search}<input type="text" placeholder="${t('搜索行动项...','Search actions...')}" value="${escHtml(state.actionFilters.search||'')}" oninput="setActionSearch(this.value)"></div>
+    <select class="filter-select" onchange="setActionFilter('status',this.value)"><option value="">${t('全部状态','All Status')}</option>${STATUS_STD.map(s=>`<option value="${s}"${state.actionFilters.status===s?' selected':''}>${s}</option>`).join('')}</select>
+    <select class="filter-select" onchange="setActionFilter('sourceType',this.value)"><option value="">${t('全部来源','All Sources')}</option><option value="clarification"${state.actionFilters.sourceType==='clarification'?' selected':''}>${t('澄清','Clarification')}</option><option value="meeting"${state.actionFilters.sourceType==='meeting'?' selected':''}>${t('会议','Meeting')}</option></select>
+    <select class="filter-select" onchange="setActionFilter('discipline',this.value)"><option value="">${t('全部专业','All Discipline')}</option>${disciplineList.map(d=>`<option value="${d}"${state.actionFilters.discipline===d?' selected':''}>${d}</option>`).join('')}</select>
+    <select class="filter-select" onchange="setActionFilter('actionBy',this.value)"><option value="">${t('责任方全部','All Action By')}</option>${actionByList.map(a=>`<option value="${a}"${state.actionFilters.actionBy===a?' selected':''}>${a}</option>`).join('')}</select>
+    <select class="filter-select" onchange="setActionFilter('priority',this.value)"><option value="">${t('优先级全部','All Priority')}</option>${PRIORITIES.map(p=>`<option value="${p}"${state.actionFilters.priority===p?' selected':''}>${p}</option>`).join('')}</select>
+    <button class="btn ${state.actionFilters.overdueOnly?'btn-danger':'btn-outline'}" onclick="toggleActionOverdue()">${t('仅逾期','Overdue Only')}</button>
+    <button class="btn btn-outline" onclick="resetActionFilters()">${t('重置筛选','Reset')}</button>
+  </div>
   <div class="table-wrap"><div class="table-scroll"><table id="actionTable"><thead><tr>
     <th class="action-col">${thActions}</th>
     ${thSort('_sourceLabel','来源','Source')}${thSort('actionId','编号','ID')}${thSort('discipline','专业','Discipline')}
@@ -68,7 +79,12 @@ function quickCloseFromAction(id,source){
 
 // ===== RECYCLE VIEW =====
 function renderRecycle(){
-  const items=[...state.trash];
+  const rf=getBoardFilter('recycle');
+  const q=String(rf.search||'').toLowerCase();
+  const items=[...state.trash].filter(tr=>{
+    if(!q)return true;
+    return JSON.stringify(tr||{}).toLowerCase().includes(q);
+  });
   const v=document.getElementById('recycleView');
   const thActions=t('操作','Actions');
   const thSource=t('来源','Source');
@@ -76,7 +92,7 @@ function renderRecycle(){
   const thTopic=t('主题/内容','Subject/Content');
   const thOwner=t('责任方','Action By');
   const thDel=t('删除时间','Deleted At');
-  v.innerHTML=`<div class="toolbar"><div class="search-box">${IC.search}<input placeholder="${t('搜索回收站...','Search recycle...')}" value="${escHtml(state.filters.search)}" oninput="handleSearchInput(this.value,'recycle')"></div><button class="btn btn-outline" onclick="restoreAllTrash()">${t('全部恢复','Restore all')}</button><button class="btn btn-danger" onclick="emptyTrash()">${t('清空回收站','Empty recycle')}</button></div>
+  v.innerHTML=`<div class="toolbar"><div class="search-box">${IC.search}<input placeholder="${t('搜索回收站...','Search recycle...')}" value="${escHtml(getBoardFilter('recycle').search)}" oninput="handleSearchInput(this.value,'recycle')"></div><button class="btn btn-outline" onclick="restoreAllTrash()">${t('全部恢复','Restore all')}</button><button class="btn btn-danger" onclick="emptyTrash()">${t('清空回收站','Empty recycle')}</button></div>
   <div class="table-wrap"><div class="table-scroll"><table id="recycleTable"><thead><tr>
     <th>${thActions}</th><th>${thSource}</th><th>${thNo}</th><th>${thTopic}</th><th>${thOwner}</th><th>${thDel}</th>
   </tr></thead><tbody>
@@ -101,7 +117,7 @@ function restoreAllTrash(){
 
 // ===== MEETING VIEW =====
 function renderMeetings(){
-  const filtered=sortData(applyFilters(state.meetings));
+  const filtered=sortData(applyFilters(state.meetings,'meeting'));
   // date directory by meeting date
   const dates=[...new Set(state.meetings.map(i=>i.meetingDate).filter(Boolean))].sort().reverse();
   let display=filtered;
@@ -125,7 +141,7 @@ function renderMeetings(){
   ${display.length?display.map(i=>{const ed=state.editingId===i.id;return`<tr data-id="${i.id}" class="${isOverdue(i)?'overdue':''} ${ed?'edit-row':''} priority-row-${String(i.priority||'').toLowerCase()}">
     <td class="action-col">${actionBtns('meeting',i,ed)}</td>
     <td><input type="checkbox" class="cb" ${state.selected.has(i.id)?'checked':''} onchange="toggleSelect('${i.id}')"></td>
-    <td class="cell-id">${inInput(i,'no',ed,40)}</td>
+    <td class="cell-id">${escHtml(i.no||'')}</td>
     <td>${ed?inSelect(i,'priority',PRIORITIES,true):`<span class="cell-priority priority-${(i.priority||'').toLowerCase()}">${escHtml(i.priority||'—')}</span>`}</td>
     <td>${inInput(i,'subject',ed,120)}</td>
     <td>${ed?inManagedSelect(i,'discipline',[''].concat(disciplineOptions),true,'discipline','meeting'):`<span class="cell-discipline">${escHtml(i.discipline||'—')}</span>`}</td>
@@ -204,6 +220,7 @@ function docCreatePackage(){
   docBoard.packages.unshift(pkg);
   docBoard.activePackageId=pkg.id;
   saveDocBoard();
+  renderSidebar();
   renderNav();
   renderCurrentView();
   toast(t('设备包已创建','Package created'));
@@ -215,6 +232,7 @@ function docDeletePackage(){
   docBoard.packages=(docBoard.packages||[]).filter(p=>p.id!==pkg.id);
   docBoard.activePackageId=docBoard.packages[0]?docBoard.packages[0].id:'';
   saveDocBoard();
+  renderSidebar();
   renderNav();
   renderCurrentView();
 }
@@ -632,13 +650,14 @@ function docParseSheetAutoHeader(sheet){
   return{rows,columns:nonEmptyCols};
 }
 function docTriggerSdrImport(){
-  toast(t('文件管理看板已临时下线','Document board is temporarily disabled'),'info');
+  const el=document.getElementById('sdrFileInput');
+  if(el)el.click();
 }
 function docTriggerPdfImport(){
-  toast(t('文件管理看板已临时下线','Document board is temporarily disabled'),'info');
+  document.getElementById('pdfCommentInput').click();
 }
 function docTriggerFolderImport(){
-  toast(t('文件管理看板已临时下线','Document board is temporarily disabled'),'info');
+  toast(t('请使用后端映射索引导入设备包文件夹','Use backend mapping index to import package folders'),'info');
 }
 async function docTriggerBackendFolderIndex(){
   let pkg=getActiveDocPackage();
@@ -1033,6 +1052,8 @@ document.getElementById('xlsxFileInput').addEventListener('change',function(e){
 });
 const pdfCommentInputEl=document.getElementById('pdfCommentInput');
 if(pdfCommentInputEl)pdfCommentInputEl.addEventListener('change',function(e){handlePdfCommentImportInput(e)});
+const sdrInputEl=document.getElementById('sdrFileInput');
+if(sdrInputEl)sdrInputEl.addEventListener('change',function(e){handleSdrImportInput(e)});
 document.getElementById('attachmentInput').addEventListener('change',async function(e){
   const file=e.target.files[0];
   if(file&&pendingAttachmentTarget)await attachToItem(pendingAttachmentTarget.sourceType,pendingAttachmentTarget.id,pendingAttachmentTarget.fieldKey,file);
@@ -1087,6 +1108,7 @@ const AUTO_BACKUP_INTERVAL_OPTIONS=[
   {labelZh:'30分钟',labelEn:'30 minutes',ms:30*60*1000},
   {labelZh:'2小时',labelEn:'2 hours',ms:2*60*60*1000}
 ];
+const AUTO_BACKUP_DAILY_LIMIT_OPTIONS=[12,24,48];
 let autoBackupCfg=loadAutoBackupCfg();
 let autoBackupDbPromise=null;
 let autoBackupFileHandle=null;
@@ -1096,15 +1118,40 @@ let autoBackupTimer=null;
 function loadAutoBackupCfg(){
   try{
     const raw=JSON.parse(localStorage.getItem(AUTO_BACKUP_CFG_KEY)||'null');
-    if(!raw||typeof raw!=='object')return{enabled:false,mode:'download',intervalMs:10*60*1000,lastBackupAt:''};
+    if(!raw||typeof raw!=='object')return{enabled:false,mode:'download',intervalMs:10*60*1000,lastBackupAt:'',maxRunsPerDay:24,runCount:0,runDate:''};
     const allowed=AUTO_BACKUP_INTERVAL_OPTIONS.map(i=>i.ms);
     const intervalMs=allowed.includes(Number(raw.intervalMs))?Number(raw.intervalMs):10*60*1000;
-    return{enabled:!!raw.enabled,mode:raw.mode==='file'?'file':'download',intervalMs,lastBackupAt:String(raw.lastBackupAt||'')};
+    const cap=Number(raw.maxRunsPerDay)||24;
+    return{enabled:!!raw.enabled,mode:raw.mode==='file'?'file':'download',intervalMs,lastBackupAt:String(raw.lastBackupAt||''),maxRunsPerDay:AUTO_BACKUP_DAILY_LIMIT_OPTIONS.includes(cap)?cap:24,runCount:Math.max(0,Number(raw.runCount)||0),runDate:String(raw.runDate||'')};
   }catch(e){
-    return{enabled:false,mode:'download',intervalMs:10*60*1000,lastBackupAt:''};
+    return{enabled:false,mode:'download',intervalMs:10*60*1000,lastBackupAt:'',maxRunsPerDay:24,runCount:0,runDate:''};
   }
 }
 function saveAutoBackupCfg(){localStorage.setItem(AUTO_BACKUP_CFG_KEY,JSON.stringify(autoBackupCfg));}
+function todayKey(){return new Date().toISOString().slice(0,10)}
+function normalizeAutoBackupCounter(){
+  const k=todayKey();
+  if(autoBackupCfg.runDate!==k){
+    autoBackupCfg.runDate=k;
+    autoBackupCfg.runCount=0;
+    saveAutoBackupCfg();
+  }
+}
+function markAutoBackupRun(){
+  normalizeAutoBackupCounter();
+  autoBackupCfg.runCount=(Number(autoBackupCfg.runCount)||0)+1;
+  saveAutoBackupCfg();
+}
+function canRunScheduledBackup(){
+  normalizeAutoBackupCounter();
+  return (Number(autoBackupCfg.runCount)||0)<(Number(autoBackupCfg.maxRunsPerDay)||24);
+}
+function setAutoBackupMaxRuns(n){
+  const val=Number(n)||24;
+  autoBackupCfg.maxRunsPerDay=AUTO_BACKUP_DAILY_LIMIT_OPTIONS.includes(val)?val:24;
+  saveAutoBackupCfg();
+  openAutoBackupDialog();
+}
 function getAutoBackupIntervalLabel(){
   const m=AUTO_BACKUP_INTERVAL_OPTIONS.find(x=>x.ms===autoBackupCfg.intervalMs);
   if(!m)return t('10分钟','10 minutes');
@@ -1113,7 +1160,16 @@ function getAutoBackupIntervalLabel(){
 function startAutoBackupTimer(){
   if(autoBackupTimer){clearInterval(autoBackupTimer);autoBackupTimer=null;}
   if(!autoBackupCfg.enabled)return;
-  autoBackupTimer=setInterval(()=>{runAutoBackup('interval',false).catch(()=>{})},autoBackupCfg.intervalMs);
+  autoBackupTimer=setInterval(()=>{
+    if(!canRunScheduledBackup()){
+      autoBackupCfg.enabled=false;
+      saveAutoBackupCfg();
+      startAutoBackupTimer();
+      toast(t('已达到当日自动备份次数上限，已自动停止定时备份','Daily backup limit reached. Scheduled backup has been stopped'),'error');
+      return;
+    }
+    runAutoBackup('interval',false).catch(()=>{});
+  },autoBackupCfg.intervalMs);
 }
 function formatBackupStamp(){
   const d=new Date();
@@ -1185,6 +1241,7 @@ async function writeWorkbookToHandle(handle,wb){
 }
 async function runAutoBackup(reason,allowDownloadFallback){
   if(!autoBackupCfg.enabled)return;
+  if(reason==='interval'&&!canRunScheduledBackup())return;
   const fp=autoBackupFingerprint();
   const wb=buildMainWorkbook();
   if(autoBackupCfg.mode==='file'){
@@ -1194,6 +1251,7 @@ async function runAutoBackup(reason,allowDownloadFallback){
         await writeWorkbookToHandle(autoBackupFileHandle,wb);
         autoBackupCfg.lastBackupAt=nowIso();
         autoBackupLastFingerprint=fp;
+        if(reason==='interval')markAutoBackupRun();
         saveAutoBackupCfg();
         if(reason==='manual')toast(t('已写入自动备份文件','Backup file updated'));
         return;
@@ -1207,16 +1265,14 @@ async function runAutoBackup(reason,allowDownloadFallback){
     XLSX.writeFile(wb,buildMainExportFileName(formatBackupStamp()));
     autoBackupCfg.lastBackupAt=nowIso();
     autoBackupLastFingerprint=fp;
+    if(reason==='interval')markAutoBackupRun();
     saveAutoBackupCfg();
     if(reason==='manual'||reason==='interval')toast(t('备份已保存','Backup saved'));
   }
 }
 async function bindAutoBackupFile(){
   if(typeof window.showSaveFilePicker!=='function'){
-    autoBackupCfg.enabled=true;
-    autoBackupCfg.mode='download';
-    saveAutoBackupCfg();
-    toast(t('浏览器不支持选择本地文件，已切换下载备份模式','File picker is not supported, switched to download mode'),'error');
+    toast(t('当前环境不支持手动选择备份目录/文件，无法启用定时备份','Current environment cannot select backup destination manually; scheduled backup cannot be enabled'),'error');
     return;
   }
   const handle=await window.showSaveFilePicker({
@@ -1227,32 +1283,19 @@ async function bindAutoBackupFile(){
   if(!granted){toast(t('未获得写入权限','Write permission denied'),'error');return;}
   await saveAutoBackupHandle(handle);
   autoBackupFileHandle=handle;
-  autoBackupCfg.enabled=true;
   autoBackupCfg.mode='file';
   saveAutoBackupCfg();
-  await runAutoBackup('manual',true);
-  toast(t('已绑定自动备份文件，后续定时任务将自动覆盖写入','Backup file bound, scheduled tasks will overwrite it'),'info');
+  toast(t('已绑定备份目标。启用定时后会按间隔覆盖写入该位置。','Backup destination bound. Scheduled tasks will overwrite this target.'),'info');
 }
 async function ensureBackupDestinationBeforeEnable(){
-  if(autoBackupCfg.mode==='file'){
-    if(!autoBackupFileHandle)autoBackupFileHandle=await loadAutoBackupHandle();
-    if(autoBackupFileHandle)return true;
-    await bindAutoBackupFile();
-    if(autoBackupCfg.mode==='file'&&!autoBackupFileHandle){
-      toast(t('未完成备份地址选择，定时备份未开启','Backup destination not selected, schedule not enabled'),'error');
-      return false;
-    }
-    return true;
-  }
-  if(typeof window.showSaveFilePicker==='function'){
-    const choose=confirm(t('建议先选择备份文件地址，确保每次定时任务都可直接覆盖保存。\n点击“确定”现在选择；点击“取消”保持下载模式。','Recommended: choose a backup file now so each schedule can overwrite directly.\nClick OK to choose now, Cancel to keep download mode.'));
-    if(choose){
-      await bindAutoBackupFile();
-      if(autoBackupCfg.mode==='file'&&!autoBackupFileHandle){
-        toast(t('未完成备份地址选择，定时备份未开启','Backup destination not selected, schedule not enabled'),'error');
-        return false;
-      }
-    }
+  if(!autoBackupFileHandle)autoBackupFileHandle=await loadAutoBackupHandle();
+  if(autoBackupFileHandle)return true;
+  const mustChoose=confirm(t('启用定时备份前，必须手动选择备份目录/文件位置。\n系统将按设定间隔持续写入该位置。\n点击“确定”立即选择。','Before enabling scheduled backup, you must manually choose backup destination.\nSystem will keep writing to this location by schedule.\nClick OK to choose now.'));
+  if(!mustChoose)return false;
+  await bindAutoBackupFile();
+  if(!autoBackupFileHandle){
+    toast(t('未完成备份地址选择，定时备份未开启','Backup destination not selected, schedule not enabled'),'error');
+    return false;
   }
   return true;
 }
@@ -1268,17 +1311,23 @@ async function openAutoBackupDialog(){
   const enabledText=autoBackupCfg.enabled?t('已开启','Enabled'):t('已关闭','Disabled');
   const modeText=autoBackupCfg.mode==='file'?t('本地文件覆盖写入','Local file overwrite'):t('下载备份','Download backup');
   const lastText=autoBackupCfg.lastBackupAt?fmtDate(autoBackupCfg.lastBackupAt):t('暂无','N/A');
-  modal.innerHTML=`<div class="modal-content" style="max-width:760px"><div class="modal-header"><h2>${t('定时备份设置','Scheduled Backup')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="storage-note">${t('建议流程：先绑定备份地址，再选择定时间隔。开启后会先执行一次备份确认成功。','Recommended flow: bind backup destination first, then choose interval. Enabling schedule performs one immediate backup as confirmation.')}</div><div class="storage-grid" style="grid-template-columns:repeat(4,minmax(120px,1fr))"><div class="storage-stat"><div class="storage-k">${t('状态','Status')}</div><div class="storage-v">${enabledText}</div></div><div class="storage-stat"><div class="storage-k">${t('当前间隔','Interval')}</div><div class="storage-v">${getAutoBackupIntervalLabel()}</div></div><div class="storage-stat"><div class="storage-k">${t('备份方式','Mode')}</div><div class="storage-v" style="font-size:.82rem">${modeText}</div></div><div class="storage-stat"><div class="storage-k">${t('备份地址','Destination')}</div><div class="storage-v" style="font-size:.76rem">${destinationText}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${intervalBtns}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-outline" onclick="disableAutoBackup()">${t('关闭定时备份','Disable Schedule')}</button><button class="btn btn-outline" onclick="switchAutoBackupToDownload()">${t('切换为下载备份','Use Download Mode')}</button><button class="btn btn-outline" onclick="bindAutoBackupFileFromDialog()">${t('绑定本地备份文件','Bind Local File')}</button></div><div class="storage-note" style="margin-top:10px">${t('最近备份日期','Last Backup Date')}: ${lastText}</div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
+  const limitBtns=AUTO_BACKUP_DAILY_LIMIT_OPTIONS.map(n=>`<button class="btn ${Number(autoBackupCfg.maxRunsPerDay||24)===n?'btn-primary':'btn-outline'}" style="min-width:90px;justify-content:center" onclick="setAutoBackupMaxRuns(${n})">${t('每日上限','Daily Cap')} ${n}</button>`).join('');
+  normalizeAutoBackupCounter();
+  const runInfo=`${Number(autoBackupCfg.runCount)||0}/${Number(autoBackupCfg.maxRunsPerDay)||24}`;
+  modal.innerHTML=`<div class="modal-content" style="max-width:780px"><div class="modal-header"><h2>${t('定时备份设置','Scheduled Backup')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="storage-note">${t('风险提醒：定时备份会持续写入你手动选择的位置。建议选择专用备份目录，并设置每日写入上限。','Risk notice: scheduled backup keeps writing to your selected destination. Use a dedicated backup location and set a daily write cap.')}</div><div class="storage-grid" style="grid-template-columns:repeat(5,minmax(110px,1fr))"><div class="storage-stat"><div class="storage-k">${t('状态','Status')}</div><div class="storage-v">${enabledText}</div></div><div class="storage-stat"><div class="storage-k">${t('当前间隔','Interval')}</div><div class="storage-v">${getAutoBackupIntervalLabel()}</div></div><div class="storage-stat"><div class="storage-k">${t('备份方式','Mode')}</div><div class="storage-v" style="font-size:.82rem">${modeText}</div></div><div class="storage-stat"><div class="storage-k">${t('备份地址','Destination')}</div><div class="storage-v" style="font-size:.76rem">${destinationText}</div></div><div class="storage-stat"><div class="storage-k">${t('今日写入','Today Runs')}</div><div class="storage-v">${runInfo}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${intervalBtns}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${limitBtns}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-outline" onclick="disableAutoBackup()">${t('关闭定时备份','Disable Schedule')}</button><button class="btn btn-outline" onclick="bindAutoBackupFileFromDialog()">${t('重新选择备份位置','Rebind Destination')}</button></div><div class="storage-note" style="margin-top:10px">${t('最近备份日期','Last Backup Date')}: ${lastText}</div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
   modal.classList.add('open');
 }
 async function setAutoBackupInterval(ms){
   const ok=await ensureBackupDestinationBeforeEnable();
   if(!ok)return;
+  const confirmEnable=confirm(t('确认开启定时备份？系统将按间隔自动覆盖写入已选位置。\n如需停止，请在此面板关闭。','Enable scheduled backup now? System will overwrite the selected destination by interval.\nYou can disable it from this panel at any time.'));
+  if(!confirmEnable)return;
   autoBackupCfg.enabled=true;
+  autoBackupCfg.mode='file';
   autoBackupCfg.intervalMs=Number(ms)||10*60*1000;
   saveAutoBackupCfg();
   startAutoBackupTimer();
-  await runAutoBackup('manual',true);
+  await runAutoBackup('manual',false);
   toast(t(`已开启定时备份，间隔 ${getAutoBackupIntervalLabel()}`,`Scheduled backup enabled: ${getAutoBackupIntervalLabel()}`),'info');
   openAutoBackupDialog();
 }
@@ -1287,12 +1336,6 @@ function disableAutoBackup(){
   saveAutoBackupCfg();
   startAutoBackupTimer();
   toast(t('已关闭定时备份','Scheduled backup disabled'),'info');
-  openAutoBackupDialog();
-}
-function switchAutoBackupToDownload(){
-  autoBackupCfg.mode='download';
-  saveAutoBackupCfg();
-  toast(t('已切换为下载备份模式','Switched to download backup mode'),'info');
   openAutoBackupDialog();
 }
 async function bindAutoBackupFileFromDialog(){
@@ -1340,15 +1383,43 @@ function importSampleData(){
   state.actions=[];save();renderNav();renderCurrentView();toast('示例数据已导入');
 }
 
+function renderOverview(){
+  const totalProjects=(projects||[]).length;
+  const openItems=getAllOpenItems();
+  const overdueItems=openItems.filter(isOverdue);
+  const highItems=openItems.filter(i=>String(i.priority||'').toUpperCase()==='HIGH');
+  const hasBusinessData=(state.clarifications.length+state.meetings.length)>0;
+  const projectPackages=(projects||[]).map(p=>{
+    const board=getProjectDocBoardSnapshot(p.id);
+    const pkgs=(board.packages||[]);
+    return{name:p.name||'',count:pkgs.length,names:pkgs.map(x=>x.name||'').filter(Boolean)};
+  });
+  const ownerRisk=buildOwnerRisk().slice(0,8);
+  const v=document.getElementById('overviewView');
+  v.innerHTML=`
+  <div class="kpi-row" style="margin-top:10px">
+    <div class="kpi-card card-open"><div class="kpi-label">${t('待处理行动','Open Actions')}</div><div class="kpi-value">${openItems.length}</div><div class="kpi-sub">${t('澄清+会议聚合','Clarification + Meeting')}</div></div>
+    <div class="kpi-card card-overdue"><div class="kpi-label">${t('逾期项','Overdue')}</div><div class="kpi-value">${overdueItems.length}</div><div class="kpi-sub">${t('优先处理','Prioritize')}</div></div>
+    <div class="kpi-card card-high"><div class="kpi-label">${t('高优先级','High Priority')}</div><div class="kpi-value">${highItems.length}</div><div class="kpi-sub">${t('未关闭','Not Closed')}</div></div>
+  </div>
+  <div class="charts-row" style="align-items:stretch">
+    <div class="chart-box" style="flex:1.6;min-width:380px;height:auto;min-height:0"><h3>${t('项目与设备包总览','Project-Package Overview')}</h3><div class="table-scroll" style="max-height:none"><table><thead><tr><th>${t('项目','Project')}</th><th>${t('设备包数量','Package Count')}</th><th>${t('设备包清单','Packages')}</th></tr></thead><tbody>${projectPackages.length?projectPackages.map(p=>`<tr><td>${escHtml(p.name||'-')}</td><td class="cell-date">${p.count}</td><td><div class="cell-text expanded">${escHtml(p.names.join(', ')||t('暂无设备包','No packages'))}</div></td></tr>`).join(''):`<tr><td colspan="3" class="no-data">${t('暂无项目','No projects')}</td></tr>`}</tbody></table></div></div>
+    <div class="chart-box" style="flex:.9;min-width:260px;height:auto;min-height:0"><h3>${t('快捷入口','Quick Entry')}</h3><div style="display:grid;gap:8px;grid-template-columns:1fr"><button class="btn btn-primary" onclick="switchTab('action')">${t('进入行动项','Open Actions')}</button><button class="btn btn-outline" onclick="switchTab('clarification')">${t('新增技术澄清','New Clarification')}</button><button class="btn btn-outline" onclick="switchTab('meeting')">${t('新增会议纪要','New Meeting')}</button></div>${!hasBusinessData?`<div style="margin-top:10px;padding:10px;border:1px dashed var(--border-light);border-radius:8px;background:var(--bg-hover)"><div style="font-size:.74rem;color:var(--text-secondary);line-height:1.5">${t('当前项目暂无业务记录，可先加载示例或导入历史Excel。','No business records yet. Load sample or import historical Excel first.')}</div><div style="display:grid;gap:6px;grid-template-columns:1fr;margin-top:8px"><button class="btn btn-outline" onclick="importSampleData()">${t('加载示例数据','Load Sample')}</button><button class="btn btn-outline" onclick="document.getElementById('xlsxFileInput').click()">${t('导入Excel','Import Excel')}</button><button class="btn btn-outline" onclick="showQuickGuide()">${t('查看快速说明','Open Quick Guide')}</button></div></div>`:''}</div>
+  </div>
+  <div class="chart-box"><h3>${t('责任方风险 Top8','Owner Risk Top8')}</h3><div class="table-scroll" style="max-height:220px"><table><thead><tr><th>${t('责任方','Owner')}</th><th>${t('未关闭','Open')}</th><th>${t('逾期','Overdue')}</th><th>${t('高优先级','High')}</th><th>${t('风险分','Score')}</th></tr></thead><tbody>${ownerRisk.length?ownerRisk.map(r=>`<tr><td>${escHtml(r.owner)}</td><td>${r.open}</td><td>${r.overdue}</td><td>${r.high}</td><td class="cell-date">${r.score}</td></tr>`).join(''):`<tr><td colspan="5" class="no-data">${t('暂无风险数据','No risk data')}</td></tr>`}</tbody></table></div></div>
+  `;
+}
+
 // ===== RENDER =====
 function renderCurrentView(){
-  if(state.currentTab==='dashboard')renderDashboard();
+  if(state.currentTab==='overview')renderOverview();
+  else if(state.currentTab==='dashboard')renderDashboard();
   else if(state.currentTab==='clarification')renderClarifications();
   else if(state.currentTab==='action')renderActions();
   else if(state.currentTab==='meeting')renderMeetings();
   else if(state.currentTab==='pdfcomments')renderPdfCommentsBoard();
   else if(state.currentTab==='recycle')renderRecycle();
-  else{state.currentTab='dashboard';renderDashboard();}
+  else{state.currentTab='overview';renderOverview();}
 }
 function renderAll(){renderSidebar();renderHeader();renderNav();renderCurrentView()}
 
