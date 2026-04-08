@@ -2,7 +2,7 @@
 
 # Clarification Action Tracker System
 
-**Clarification & Action Tracker · FLNG/FPSO EPC**
+**Engineering Closure Tracker (formerly Clarification & Action Tracker) · FLNG/FPSO EPC**
 
 [![English](https://img.shields.io/badge/English-Primary-0B5FFF)](README.md)
 [![中文](https://img.shields.io/badge/%E4%B8%AD%E6%96%87-Switch-334155)](README.zh-CN.md)
@@ -94,16 +94,52 @@ flowchart TB
 quick-start.bat --serve 5500
 ```
 
-```bash
-sh quick-start.sh 5500
+```bat
+quick-start.bat --diagnose --serve 5500
 ```
 
 - Data and attachments are persisted in local SQLite.
+- `--diagnose` keeps a visible backend console and writes startup logs to `logs/backend-start-*.log`.
+- Startup now performs `/api/health` verification and prints actionable hints for:
+  - port occupied by another process
+  - missing Python runtime
+  - process launch blocked by endpoint policy
 - Stop backend:
 
 ```bat
 quick-stop.bat 5500
 ```
+
+### Local Backup and Portable Package
+
+```bat
+quick-backup-db.bat
+```
+
+```bat
+quick-portable-package.bat
+```
+
+- `quick-backup-db.bat`: one-click backup of `data/tracker.db` to `portable-backups/`.
+- `quick-portable-package.bat`: creates a standardized portable ZIP under `portable-package/` using a temporary staging folder (no persistent project mirror is left in the workspace).
+- By default, `.venv` is skipped for cross-machine compatibility. Use `--with-venv` only for same-machine use.
+- Optional debug flag: `--keep-stage` keeps the temporary staging folder after packaging.
+- Migration rule: **copy database file**.
+  - Source: `data/tracker.db` (or `portable-backups/tracker-*.db`)
+  - Target: replace `data/tracker.db` on the destination machine
+
+### Python EXE One-Click Package
+
+```bat
+build-pythonexe.bat
+```
+
+```bat
+quick-package-exe.bat
+```
+
+- `build-pythonexe.bat`: builds `dist/ClarificationActionTracker.exe` via PyInstaller.
+- `quick-package-exe.bat`: builds and zips a single-run package under `portable-package/ClarificationActionTracker-EXE-*.zip`.
 
 ### 2) Web Mode (Vercel / GitHub Pages)
 
@@ -154,6 +190,29 @@ https://xfki.github.io/3.-Clarification_action_tracker_system/
 2. Work from Actions: overdue -> high-priority -> due soon.
 3. Review owner risks in Dashboard.
 4. Export Excel for weekly handover/archive.
+
+## 90-Second Onboarding
+
+1. Start from Overview to check cross-project risks.
+2. Sidebar now shows package lists for all projects by default for quick comparison.
+3. Put technical questions in Clarifications and meeting tasks in Meetings.
+4. In Actions, prioritize Overdue + High priority items first.
+5. Run Backup Now before end-of-day handover.
+
+## BI-Style Dashboard Guidance
+
+1. Data-entry standards:
+  - Keep status dictionary centered on `OPEN / IN_PROGRESS / CLOSED`.
+  - Fill owner, priority, and due date whenever possible.
+2. Closure quality metrics:
+  - Scope: Clarification + Meeting records.
+  - Core KPIs: <=7-day close rate, average close days, close rate by source.
+3. Risk exposure metrics:
+  - Owner risk score = open + 2 x overdue + 2 x high priority.
+  - Add due-week workload Top N for weekly planning and balancing.
+4. Display split:
+  - Overview for fast decisions (dense KPI + Top tables).
+  - Dashboard for trend analysis (aging buckets, 7-day trend, source efficiency).
 
 ## Project Structure
 

@@ -60,8 +60,8 @@ let backendHeartbeatTimer=null;
 let backendClientRegistered=false;
 const ATTACHMENT_DB_NAME='et_attachments_db';
 const ATTACHMENT_STORE='attachments';
-const APP_TITLE_ZH='工程澄清与行动追踪';
-const APP_TITLE_EN='Clarification Action Tracker';
+const APP_TITLE_ZH='工程闭环追踪台';
+const APP_TITLE_EN='Engineering Closure Tracker';
 const FIRST_USE_INTRO_KEY='et_first_use_intro_seen_v1';
 const BACKEND_SYNC_DELAY_MS=900;
 const CLIENT_HEARTBEAT_MS=8000;
@@ -859,7 +859,7 @@ async function storageReport(){
 }
 function showQuickGuide(){
   const modal=document.getElementById('modal');
-  modal.innerHTML=`<div class="modal-content" style="max-width:900px"><div class="modal-header"><h2>${t('使用说明（快速版）','Quick Engineer Guide')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="guide-grid"><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.search}</span><span class="guide-title">1. ${t('先看总看板，再进项目','Start from Overview')}</span></div><div class="guide-text">${t('General 仅保留“总看板”，先看全项目风险，再切换项目处理。','General only contains Overview. Review cross-project risks first, then work inside a project.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.plus}</span><span class="guide-title">2. ${t('新增后必须点保存','Save to Keep New Rows')}</span></div><div class="guide-text">${t('新增行是临时草稿，只有点击“保存”才会持久化；切换看板会自动丢弃未保存草稿。','New rows are drafts. They are persisted only after Save; switching views discards unsaved drafts.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.check}</span><span class="guide-title">3. ${t('筛选口径一致且互不干扰','Independent Filters by Board')}</span></div><div class="guide-text">${t('澄清/会议/行动项都支持状态、责任方、专业等筛选；每个看板筛选独立缓存。','Clarification/Meeting/Action boards all support status, owner, discipline filters with isolated states.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.save}</span><span class="guide-title">4. ${t('自动备份先选路径并设上限','Backup with Guardrails')}</span></div><div class="guide-text">${t('启用定时备份前必须手动选择备份位置，并设置每日写入上限，防止后台持续写入。','Scheduled backup requires manual destination selection and a daily write cap to prevent continuous background writes.')}</div></div></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
+  modal.innerHTML=`<div class="modal-content" style="max-width:940px"><div class="modal-header"><h2>${t('工程师快速上手（90秒）','Engineer Quick Start (90s)')}</h2><button class="modal-close" onclick="closeModalPreview()">✕</button></div><div class="modal-body"><div class="guide-grid"><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.search}</span><span class="guide-title">1. ${t('先看总看板，再锁定项目','Start from Overview')}</span></div><div class="guide-text">${t('先看跨项目风险，再切换到目标项目处理。项目目录默认展开所有设备包，便于横向比对。','Review cross-project risks first, then switch to target project. Package lists now stay visible for all projects.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.plus}</span><span class="guide-title">2. ${t('新增后要保存','Save New Rows')}</span></div><div class="guide-text">${t('新增行是草稿，必须点“保存”才持久化；切换看板会自动丢弃草稿。','New rows are drafts and must be saved. Unsaved drafts are discarded on view switch.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.check}</span><span class="guide-title">3. ${t('优先处理逾期 + 高优','Overdue + High First')}</span></div><div class="guide-text">${t('行动项看板优先筛选逾期、责任方和高优先级；关闭后自动回写源记录，保证可追溯。','In Actions, filter overdue/owner/high priority first. Closure writes back to source records for traceability.')}</div></div><div class="guide-step"><div class="guide-head"><span class="guide-icon">${IC.save}</span><span class="guide-title">4. ${t('备份策略先配置再启用','Backup Guardrails')}</span></div><div class="guide-text">${t('先选择备份位置，再开启自动备份；建议每日收工前执行一次“立即备份”。','Pick destination first, then enable auto backup. Run Backup Now before end-of-day handover.')}</div></div></div><div class="chart-box" style="margin-top:12px;min-height:0"><h3>${t('右上角按钮说明（从高频到低频）','Top-Right Buttons (High to Low Frequency)')}</h3><div class="table-scroll" style="max-height:220px"><table><thead><tr><th>${t('按钮','Button')}</th><th>${t('用途','Purpose')}</th><th>${t('建议频次','Suggested Frequency')}</th></tr></thead><tbody><tr><td>${t('导入Excel / 导出Excel','Import / Export Excel')}</td><td>${t('历史数据接入与周报输出','Bring in history and export reports')}</td><td>${t('每日','Daily')}</td></tr><tr><td>${t('立即备份 / 自动备份设置','Backup Now / Auto Backup')}</td><td>${t('防止本地数据丢失','Prevent local data loss')}</td><td>${t('每日 / 首次配置','Daily / Initial setup')}</td></tr><tr><td>${t('使用说明','Guide')}</td><td>${t('快速查看操作口径和按钮说明','Open workflow and button guide')}</td><td>${t('新同事入场时','Onboarding')}</td></tr><tr><td>${t('存储分析','Storage')}</td><td>${t('排查附件膨胀与容量风险','Inspect attachment growth and storage risk')}</td><td>${t('每周','Weekly')}</td></tr><tr><td>${t('示例数据','Sample')}</td><td>${t('演示流程或测试筛选','Demo or test filters')}</td><td>${t('按需','As needed')}</td></tr></tbody></table></div></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModalPreview()">${t('关闭','Close')}</button></div></div>`;
   modal.classList.add('open');
 }
 function getFieldAttachments(item,fieldKey){
@@ -1127,7 +1127,7 @@ function compareBySerialDesc(a,b,field){
 function renderSidebar(){
   const sb=document.getElementById('sidebar');
   sb.innerHTML=`
-  <div class="sb-logo"><div class="sb-logo-mark">ET</div><div class="sb-logo-text">Eng Tracker<small>${t('设备采购追踪系统','Equipment Tracking')}</small></div><button id="sidebarToggleBtn" class="sb-toggle-btn" onclick="toggleSidebar()" title="${t('隐藏目录','Collapse Sidebar')}">◀</button></div>
+  <div class="sb-logo"><div class="sb-logo-mark">CT</div><div class="sb-logo-text">Closure Tracker<small>${t('FLNG/FPSO 工程闭环','FLNG/FPSO Closure')}</small></div><button id="sidebarToggleBtn" class="sb-toggle-btn" onclick="toggleSidebar()" title="${t('隐藏目录','Collapse Sidebar')}">◀</button></div>
   <div class="sb-section">
     <div class="sb-section-title">${t('General','General')}</div>
     <ul class="sb-proj-list">
@@ -1139,7 +1139,7 @@ function renderSidebar(){
     <ul class="sb-proj-list">${projects.map(p=>{
       const pBoard=getProjectDocBoardSnapshot(p.id);
       const pPkgs=(pBoard.packages||[]);
-      const showPkgRows=p.id===activeProjectId;
+      const showPkgRows=true;
       const pkgRows=!showPkgRows?'':(pPkgs.length
         ? pPkgs.map(pk=>`<li class="sb-proj-item${p.id===activeProjectId&&docBoard.activePackageId===pk.id?' active':''}" onclick="switchPackageFromProject('${p.id}','${pk.id}')"><span style="padding-left:14px">• ${escHtml(pk.name)}</span><span class="proj-tools"><button class="proj-del" onclick="event.stopPropagation();renamePackageForProject('${p.id}','${pk.id}')" title="重命名设备包">✎</button><button class="proj-del" onclick="event.stopPropagation();deletePackageFromProject('${p.id}','${pk.id}')" title="删除设备包">✕</button></span></li>`).join('')
         : `<li class="sb-proj-item"><span style="padding-left:14px;color:var(--text-muted)">${t('暂无设备包','No packages')}</span></li>`);
@@ -1242,14 +1242,14 @@ function renderHeader(){
     <input id="operatorInput" value="${escHtml(operatorName)}" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-deep);color:var(--text-primary);font-size:.75rem;width:110px" placeholder="操作人" onchange="setOperator(this.value)">
     <button class="hdr-btn" onclick="toggleLanguage()">${uiLang==='zh'?'EN':'中文'}</button>
     <button class="hdr-btn hdr-icon-btn" onclick="toggleTheme()" title="${uiTheme==='dark'?t('切换浅色主题','Switch to light mode'):t('切换夜班主题','Switch to night mode')}">${uiTheme==='dark'?IC.sun:IC.moon}</button>
-    <button class="hdr-btn" onclick="showQuickGuide()">${IC.help} ${t('使用说明','Guide')}</button>
-    <button class="hdr-btn" onclick="importSampleData()">${IC.db} ${t('示例数据','Sample')}</button>
-    <button class="hdr-btn" onclick="storageReport()">${IC.db} ${t('存储分析','Storage')}</button>
-    <button class="hdr-btn" onclick="openAutoBackupDialog()">${IC.save} ${t('自动备份设置','Auto Backup')}</button>
-    <button class="hdr-btn hdr-btn-backup" onclick="runManualBackupNow()">${IC.download} ${t('立即备份','Backup Now')}</button>
-    <button class="hdr-btn" onclick="document.getElementById('xlsxFileInput').click()">${IC.upload} ${t('导入Excel','Import Excel')}</button>
-    <button class="hdr-btn" onclick="exportXlsx()">${IC.download} ${t('导出Excel','Export Excel')}</button>
-    <button class="hdr-btn" onclick="clearCurrentProjectData()">${IC.empty} ${t('一键清空项目','Clear Project')}</button>
+    <button class="hdr-btn" onclick="showQuickGuide()" title="${t('查看快速上手与按钮说明','Open quick guide and button map')}">${IC.help} ${t('使用说明','Guide')}</button>
+    <button class="hdr-btn" onclick="document.getElementById('xlsxFileInput').click()" title="${t('导入历史台账','Import historical records')}">${IC.upload} ${t('导入Excel','Import Excel')}</button>
+    <button class="hdr-btn" onclick="exportXlsx()" title="${t('导出当前项目数据','Export current project data')}">${IC.download} ${t('导出Excel','Export Excel')}</button>
+    <button class="hdr-btn hdr-btn-backup" onclick="runManualBackupNow()" title="${t('立即执行备份','Run immediate backup')}">${IC.download} ${t('立即备份','Backup Now')}</button>
+    <button class="hdr-btn" onclick="openAutoBackupDialog()" title="${t('配置定时备份与限额','Configure schedule and write cap')}">${IC.save} ${t('自动备份设置','Auto Backup')}</button>
+    <button class="hdr-btn" onclick="storageReport()" title="${t('查看容量与附件分布','Inspect storage and attachment footprint')}">${IC.db} ${t('存储分析','Storage')}</button>
+    <button class="hdr-btn" onclick="importSampleData()" title="${t('加载演示样例数据','Load sample demo data')}">${IC.db} ${t('示例数据','Sample')}</button>
+    <button class="hdr-btn" onclick="clearCurrentProjectData()" title="${t('清空当前项目并移入回收站','Clear current project and move to recycle')}">${IC.empty} ${t('一键清空项目','Clear Project')}</button>
   </div>`;
 }
 function closeFirstUseIntro(markSeen){
@@ -1404,6 +1404,8 @@ function renderDashboard(){
   const highOpen=getAllOpenItems().filter(i=>String(i.priority||'').toUpperCase()==='HIGH').length;
   const ownerRisk=buildOwnerRisk();
   const comboRisk=buildComboRiskRows();
+  const aging=buildOpenAgingBuckets();
+  const sourceClosure=buildSourceClosureRows();
   const labelTotal=t('全部条目','Total Items');
   const labelOpen=t('待处理','Open');
   const labelOverdue=t('逾期','Overdue');
@@ -1428,6 +1430,7 @@ function renderDashboard(){
     <div class="chart-box"><h3>${t('责任方分布','Action By')}</h3><canvas id="chartActionBy"></canvas></div>
     <div class="chart-box"><h3>${t('优先级分布','Priority')}</h3><canvas id="chartPriority"></canvas></div>
   </div>`;
+  dash.innerHTML+=`<div class="charts-row"><div class="chart-box"><h3>${t('开放项老化分布','Open Aging Buckets')}</h3><canvas id="chartAging"></canvas></div><div class="chart-box"><h3>${t('来源闭环效率','Closure Efficiency by Source')}</h3><div class="table-scroll" style="max-height:240px"><table><thead><tr><th>${t('来源','Source')}</th><th>${t('总数','Total')}</th><th>${t('开放','Open')}</th><th>${t('处理中','In Progress')}</th><th>${t('已关闭','Closed')}</th><th>${t('关闭率','Close Rate')}</th></tr></thead><tbody>${sourceClosure.map(r=>`<tr><td>${escHtml(r.source)}</td><td>${r.total}</td><td>${r.open}</td><td>${r.inProgress}</td><td>${r.closed}</td><td class="cell-date">${r.closeRate}%</td></tr>`).join('')}</tbody></table></div></div></div>`;
   dash.innerHTML+=`<div class="chart-box"><h3>${t('最近7天新增/关闭趋势','7-Day Created vs Closed')}</h3><canvas id="chartTrend"></canvas></div>`;
   dash.innerHTML+=`<div class="chart-box"><h3>${t('责任方风险排名','Owner Risk Ranking')}</h3>
     <div class="table-scroll" style="max-height:240px"><table><thead><tr><th>${t('责任方','Owner')}</th><th>${t('未关闭','Open')}</th><th>${t('逾期','Overdue')}</th><th>${t('高优先级','High')}</th><th>${t('风险分','Risk Score')}</th></tr></thead><tbody>
@@ -1471,6 +1474,7 @@ function renderDashboard(){
   dashboardCharts.push(new Chart(document.getElementById('chartActionBy'),{type:'doughnut',data:{labels:abLabels,datasets:[{data:abValues,backgroundColor:abColors,borderWidth:0}]},options:dOpts}));
   const pri={High:0,Medium:0,Low:0};state.clarifications.forEach(i=>{if(i.priority&&pri[i.priority]!=null)pri[i.priority]++});
   dashboardCharts.push(new Chart(document.getElementById('chartPriority'),{type:'doughnut',data:{labels:Object.keys(pri),datasets:[{data:Object.values(pri),backgroundColor:['#ef4444','#f59e0b','#10b981'],borderWidth:0}]},options:dOpts}));
+  dashboardCharts.push(new Chart(document.getElementById('chartAging'),{type:'bar',data:{labels:[t('0-7天','0-7d'),t('8-14天','8-14d'),t('15-30天','15-30d'),t('31天+','31d+')],datasets:[{data:[aging['0-7'],aging['8-14'],aging['15-30'],aging['31+']],backgroundColor:['#22c55e','#f59e0b','#f97316','#ef4444'],borderRadius:4}]},options:{...cOpts,plugins:{...cOpts.plugins,legend:{display:false}},scales:{x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}},y:{beginAtZero:true,precision:0,ticks:{color:'#64748b'},grid:{color:'rgba(42,54,84,.3)'}}}}}));
   const trend=buildRecentTrend();
   dashboardCharts.push(new Chart(document.getElementById('chartTrend'),{
     type:'line',
@@ -1499,6 +1503,72 @@ function buildRecentTrend(){
     closed.push(all.filter(x=>normalizeStatus(x.status)==='CLOSED'&&String(x.completionDate||'').slice(0,10)===key).length);
   }
   return{labels,created,closed};
+}
+function parseDateSafe(v){
+  if(!v)return null;
+  const d=new Date(v);
+  if(isNaN(d))return null;
+  d.setHours(0,0,0,0);
+  return d;
+}
+function calcDurationDays(start,end){
+  const s=parseDateSafe(start);
+  const e=parseDateSafe(end);
+  if(!s||!e)return null;
+  return Math.max(0,Math.floor((e-s)/86400000));
+}
+function getItemCreatedDate(item){
+  return item.createdAt||item.openDate||item.meetingDate||'';
+}
+function getItemClosedDate(item){
+  return item.completionDate||item.updatedAt||'';
+}
+function buildOpenAgingBuckets(){
+  const now=parseDateSafe(new Date().toISOString())||new Date();
+  const buckets={'0-7':0,'8-14':0,'15-30':0,'31+':0};
+  getAllOpenItems().forEach(i=>{
+    const created=parseDateSafe(getItemCreatedDate(i));
+    if(!created)return;
+    const age=Math.max(0,Math.floor((now-created)/86400000));
+    if(age<=7)buckets['0-7']++;
+    else if(age<=14)buckets['8-14']++;
+    else if(age<=30)buckets['15-30']++;
+    else buckets['31+']++;
+  });
+  return buckets;
+}
+function buildClosureQualitySnapshot(){
+  const rows=[...state.clarifications,...state.meetings].filter(i=>normalizeStatus(i.status)==='CLOSED');
+  let valid=0;
+  let within7=0;
+  let totalDays=0;
+  rows.forEach(i=>{
+    const days=calcDurationDays(getItemCreatedDate(i),getItemClosedDate(i));
+    if(days==null)return;
+    valid++;
+    totalDays+=days;
+    if(days<=7)within7++;
+  });
+  return{
+    closed:rows.length,
+    valid,
+    within7,
+    within7Rate:valid?Math.round(within7/valid*100):0,
+    avgCloseDays:valid?Math.round(totalDays/valid):0
+  };
+}
+function buildSourceClosureRows(){
+  const sourceRows=[
+    {source:t('技术澄清','Clarification'),items:[...state.clarifications]},
+    {source:t('会议纪要','Meeting'),items:[...state.meetings]}
+  ];
+  return sourceRows.map(r=>{
+    const total=r.items.length;
+    const open=r.items.filter(i=>normalizeStatus(i.status)==='OPEN').length;
+    const inProgress=r.items.filter(i=>normalizeStatus(i.status)==='IN_PROGRESS').length;
+    const closed=r.items.filter(i=>normalizeStatus(i.status)==='CLOSED').length;
+    return{source:r.source,total,open,inProgress,closed,closeRate:total?Math.round(closed/total*100):0};
+  });
 }
 function buildOwnerWeekLoad(){
   const rows={};

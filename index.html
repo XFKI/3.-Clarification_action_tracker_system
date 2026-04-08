@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FLNG/FPSO 工程追踪系统 | Engineering Tracker</title>
+<title>工程闭环追踪台 | Engineering Closure Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@500;600;700&family=Oswald:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/styles.css?v=20260330e">
+<link rel="stylesheet" href="assets/css/styles.css?v=20260408a">
 </head>
 <body>
 <aside id="sidebar"></aside>
@@ -15,7 +15,8 @@
 <div id="main">
   <header id="mainHeader"></header>
   <nav id="mainNav"></nav>
-  <section id="dashboardView" class="view active"></section>
+  <section id="overviewView" class="view active"></section>
+  <section id="dashboardView" class="view"></section>
   <section id="actionView" class="view"></section>
   <section id="clarificationView" class="view"></section>
   <section id="meetingView" class="view"></section>
@@ -25,9 +26,10 @@
   <div id="toastContainer"></div>
 </div>
 <input type="file" id="xlsxFileInput" class="hidden-file-input" accept=".xlsx,.xls,.csv" title="Excel file input">
+<input type="file" id="sdrFileInput" class="hidden-file-input" accept=".xlsx,.xls,.csv" title="SDR file input">
 <input type="file" id="attachmentInput" class="hidden-file-input" title="Attachment file input">
 <input type="file" id="pdfCommentInput" class="hidden-file-input" accept="application/pdf,.pdf" multiple title="PDF comments input">
-<script src="assets/js/app.core.js?v=20260330e"></script>
-<script src="assets/js/app.features.js?v=20260330e"></script>
+<script src="assets/js/app.core.js?v=20260408a"></script>
+<script src="assets/js/app.features.js?v=20260408a"></script>
 </body>
 </html>
