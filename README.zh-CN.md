@@ -142,8 +142,8 @@ build-pythonexe.bat
 quick-package-exe.bat
 ```
 
-- `build-pythonexe.bat`：使用 PyInstaller 构建 `dist/ClarificationActionTracker.exe`。
-- `quick-package-exe.bat`：自动构建并打包为 `portable-package/ClarificationActionTracker-EXE-*.zip`，解压后双击 EXE 即可运行。
+- `build-pythonexe.bat`：使用 PyInstaller 构建 `dist/EngineeringClosureTracker.exe`（含应用图标）。
+- `quick-package-exe.bat`：自动构建并打包为 `portable-package/EngineeringClosureTracker-EXE-*.zip`，解压后双击 EXE 即可运行。
 
 ### 2) 网页模式（Vercel / GitHub Pages）
 

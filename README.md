@@ -138,8 +138,8 @@ build-pythonexe.bat
 quick-package-exe.bat
 ```
 
-- `build-pythonexe.bat`: builds `dist/ClarificationActionTracker.exe` via PyInstaller.
-- `quick-package-exe.bat`: builds and zips a single-run package under `portable-package/ClarificationActionTracker-EXE-*.zip`.
+- `build-pythonexe.bat`: builds `dist/EngineeringClosureTracker.exe` via PyInstaller (with app icon).
+- `quick-package-exe.bat`: builds and zips a single-run package under `portable-package/EngineeringClosureTracker-EXE-*.zip`.
 
 ### 2) Web Mode (Vercel / GitHub Pages)
 
