@@ -658,6 +658,29 @@ def _load_fitz():
         return None
 
 
+def _annotation_text_candidates(annot, info: dict) -> list:
+    candidates = []
+    candidates.append(info.get("content"))
+    # Some tools store comment text in subject/title or inside annot rich text.
+    candidates.append(info.get("subject"))
+    candidates.append(info.get("title"))
+    try:
+        get_text = getattr(annot, "get_text", None)
+        if callable(get_text):
+            candidates.append(get_text("text"))
+    except Exception:
+        pass
+    return candidates
+
+
+def _pick_annotation_text(annot, info: dict) -> str:
+    for raw in _annotation_text_candidates(annot, info):
+        txt = " ".join(str(raw or "").split()).strip()
+        if txt:
+            return txt
+    return ""
+
+
 def _extract_comments_pymupdf(data: bytes, limit: int = 200) -> list:
     fitz = _load_fitz()
     if fitz is None:
@@ -670,27 +693,26 @@ def _extract_comments_pymupdf(data: bytes, limit: int = 200) -> list:
             page = doc[page_index]
             annot = page.first_annot
             while annot:
-                info = annot.info or {}
-                a_type = ""
+                next_annot = annot.next
                 try:
-                    a_type = str(annot.type[1] or "")
-                except Exception:
+                    info = annot.info or {}
                     a_type = ""
-                if a_type.strip().lower() == "line":
-                    annot = annot.next
-                    continue
-                text = " ".join(str(info.get("content") or "").split()).strip()
-                if not text:
-                    for c in (info.get("subject"), info.get("title")):
-                        tmp = " ".join(str(c or "").split()).strip()
-                        if tmp:
-                            text = tmp
-                            break
-                if text:
-                    comments.append(text)
-                    if len(comments) >= limit:
-                        return comments
-                annot = annot.next
+                    try:
+                        a_type = str(annot.type[1] or "")
+                    except Exception:
+                        a_type = ""
+                    if a_type.strip().lower() == "line":
+                        continue
+                    text = _pick_annotation_text(annot, info)
+                    if text:
+                        comments.append(text)
+                        if len(comments) >= limit:
+                            return comments
+                except Exception:
+                    # Skip problematic annotation and continue extraction.
+                    pass
+                finally:
+                    annot = next_annot
     except Exception:
         return []
     finally:
@@ -714,36 +736,35 @@ def _extract_comment_details_pymupdf(data: bytes, limit: int = 400) -> list:
             page = doc[page_index]
             annot = page.first_annot
             while annot:
-                info = annot.info or {}
-                a_type = ""
+                next_annot = annot.next
                 try:
-                    a_type = str(annot.type[1] or "")
-                except Exception:
+                    info = annot.info or {}
                     a_type = ""
-                if a_type.strip().lower() == "line":
-                    annot = annot.next
-                    continue
-                text = " ".join(str(info.get("content") or "").split()).strip()
-                if not text:
-                    for c in (info.get("subject"), info.get("title")):
-                        tmp = " ".join(str(c or "").split()).strip()
-                        if tmp:
-                            text = tmp
-                            break
-                if text:
-                    details.append(
-                        {
-                            "text": text,
-                            "page": int(page_index + 1),
-                            "author": str(info.get("title") or info.get("name") or "").strip(),
-                            "created": str(info.get("creationDate") or "").strip(),
-                            "updated": str(info.get("modDate") or "").strip(),
-                            "annotationType": a_type.strip(),
-                        }
-                    )
-                    if len(details) >= limit:
-                        return details
-                annot = annot.next
+                    try:
+                        a_type = str(annot.type[1] or "")
+                    except Exception:
+                        a_type = ""
+                    if a_type.strip().lower() == "line":
+                        continue
+                    text = _pick_annotation_text(annot, info)
+                    if text:
+                        details.append(
+                            {
+                                "text": text,
+                                "page": int(page_index + 1),
+                                "author": str(info.get("title") or info.get("name") or "").strip(),
+                                "created": str(info.get("creationDate") or "").strip(),
+                                "updated": str(info.get("modDate") or "").strip(),
+                                "annotationType": a_type.strip(),
+                            }
+                        )
+                        if len(details) >= limit:
+                            return details
+                except Exception:
+                    # Skip problematic annotation and continue extraction.
+                    pass
+                finally:
+                    annot = next_annot
     except Exception:
         return []
     finally:

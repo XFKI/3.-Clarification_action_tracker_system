@@ -40,7 +40,7 @@ if not exist "%ICON_PATH%" (
 if exist "dist\%APP_EXE_NAME%.exe" del /q "dist\%APP_EXE_NAME%.exe" >nul 2>nul
 
 echo [build-pythonexe] Building one-file executable...
-"%PY_CMD%" -m PyInstaller --noconfirm --clean --onefile --name "%APP_EXE_NAME%" --icon "%ICON_PATH%" --hidden-import sqlite3 --hidden-import _sqlite3 --add-data "index.html;." --add-data "assets;assets" --add-data "backend;backend" app_launcher.py
+"%PY_CMD%" -m PyInstaller --noconfirm --clean --onefile --name "%APP_EXE_NAME%" --icon "%ICON_PATH%" --hidden-import sqlite3 --hidden-import _sqlite3 --hidden-import fitz --collect-all pymupdf --add-data "index.html;." --add-data "assets;assets" --add-data "backend;backend" app_launcher.py
 if %ERRORLEVEL% neq 0 (
   echo [build-pythonexe] Build failed.
   exit /b 1
